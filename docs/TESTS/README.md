@@ -8,3 +8,4 @@ Executable tests belong in `/tests` or alongside code when the approved toolchai
 
 - [OpenCode 合成 Fixture 契约](opencode-synthetic-fixture-contract.md)
 - [WorkBuddy 合成 Fixture 契约](workbuddy-synthetic-fixture-contract.md)
+- [Qoder 合成 Fixture 契约](qoder-synthetic-fixture-contract.md)
