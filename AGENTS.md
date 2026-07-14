@@ -13,14 +13,24 @@ This repository is in product definition and technical validation. Do not add pr
 
 ## Project Structure
 
+- Documentation entry and placement rules: docs/README.md
 - Project context and workflow: docs/PROJECT/
 - Product requirements: docs/PRD/
+- Published backlog records: docs/ISSUES/
 - Product and technical decisions: docs/DECISIONS/
 - Architecture and technical design: docs/TECH/
 - UI structure and mockups: docs/UI/
 - Test strategy and evaluation documentation: docs/TESTS/
 - Review reports: docs/REVIEWS/
+- Stage handoffs: docs/HANDOFF/
+- Release notes and verification: docs/RELEASES/
 - Editable diagrams: docs/diagrams/
+- Deployable applications: apps/
+- Shared implementation packages: packages/
+- Automated tests and synthetic fixtures: tests/
+- Repository automation and validation scripts: scripts/
+
+Do not create a new top-level documentation or code directory when an existing lane owns the artifact. The exact app and package boundaries remain subject to the approved architecture ADR.
 
 ## Delivery Rules
 

@@ -5,9 +5,9 @@
 1. Product exploration and confirmed decisions.
 2. PRD and editable diagrams.
 3. PRD readiness review.
-4. Technical feasibility spikes and evaluation design.
-5. Architecture decision records.
-6. Vertical-slice GitHub issues.
+4. Vertical-slice issue draft, approval, and publication.
+5. Technical feasibility spikes and evaluation design.
+6. Architecture decision records.
 7. Implementation plans for approved issues.
 8. Test-driven development on issue branches.
 9. Pull request review and required checks.
