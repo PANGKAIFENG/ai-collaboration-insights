@@ -1,0 +1,28 @@
+<mxfile host="app.diagrams.net" modified="2026-07-14T00:00:00.000Z" agent="Codex" version="26.0.11">
+  <diagram id="deep-analysis-consent-flow" name="深度分析授权流程">
+    <mxGraphModel dx="1900" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="step-1" value="1. 用户选择范围&#xa;日期 / 任务 / 会话" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eef4ff;strokeColor=#5b8def;strokeWidth=2;fontSize=17;" vertex="1" parent="1"><mxGeometry x="40" y="210" width="200" height="100" as="geometry"/></mxCell>
+        <mxCell id="step-2" value="2. 本地生成预览&#xa;内容类型 / 时间范围 / 预计 Token" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff7db;strokeColor=#d8a437;strokeWidth=2;fontSize=17;" vertex="1" parent="1"><mxGeometry x="290" y="210" width="230" height="100" as="geometry"/></mxCell>
+        <mxCell id="step-3" value="3. 展示目标服务&#xa;模型 / 隐私提示 / 费用提示" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff7db;strokeColor=#d8a437;strokeWidth=2;fontSize=17;" vertex="1" parent="1"><mxGeometry x="570" y="210" width="230" height="100" as="geometry"/></mxCell>
+        <mxCell id="decision" value="用户确认&#xa;本次发送？" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff7db;strokeColor=#d8a437;strokeWidth=2;fontSize=17;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="850" y="205" width="180" height="110" as="geometry"/></mxCell>
+        <mxCell id="send" value="4. 发送确认范围&#xa;仅本次授权" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dff4e6;strokeColor=#2e9c61;strokeWidth=2;fontSize=17;" vertex="1" parent="1"><mxGeometry x="1080" y="210" width="210" height="100" as="geometry"/></mxCell>
+        <mxCell id="analyze" value="5. 返回并校验结果&#xa;保存本地分析版本" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dff4e6;strokeColor=#2e9c61;strokeWidth=2;fontSize=17;" vertex="1" parent="1"><mxGeometry x="1340" y="210" width="210" height="100" as="geometry"/></mxCell>
+        <mxCell id="complete" value="6. 补充标准报告&#xa;保留证据与置信度" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dff4e6;strokeColor=#2e9c61;strokeWidth=2;fontSize=17;" vertex="1" parent="1"><mxGeometry x="1600" y="210" width="220" height="100" as="geometry"/></mxCell>
+        <mxCell id="cancel" value="取消或超时&#xa;不发送，不改变标准结果" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe5e1;strokeColor=#c65d4d;strokeWidth=2;fontSize=17;" vertex="1" parent="1"><mxGeometry x="830" y="420" width="220" height="90" as="geometry"/></mxCell>
+        <mxCell id="failure" value="失败或结果不完整&#xa;保留标准结果，可缩小范围或重试" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe5e1;strokeColor=#c65d4d;strokeWidth=2;fontSize=17;" vertex="1" parent="1"><mxGeometry x="1330" y="420" width="230" height="90" as="geometry"/></mxCell>
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#4e7fd1;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="step-1" target="step-2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#d8a437;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="step-2" target="step-3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#d8a437;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="step-3" target="decision"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e4" value="确认" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2e9c61;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="decision" target="send"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e5" value="取消 / 超时" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#c65d4d;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="decision" target="cancel"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2e9c61;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="send" target="analyze"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e7" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2e9c61;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="analyze" target="complete"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e8" value="失败 / 不完整" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#c65d4d;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="analyze" target="failure"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e9" value="缩小范围后重新预览" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#c65d4d;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="failure" target="step-2"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

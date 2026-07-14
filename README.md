@@ -35,21 +35,24 @@ This project turns local session evidence into:
 
 ## Documentation
 
-- [Product requirements](docs/PRD/ai-collaboration-review-prd-v0.1.md)
+- [Product requirements](docs/PRD/ai-collaboration-review-prd-v0.2.md)
+- [PRD readiness review](docs/REVIEWS/prd-review-v0.1.md)
+- [Issue breakdown draft](docs/ISSUES/issue-breakdown-v0.1.md)
 - [Project context](docs/PROJECT/project-context.md)
 - [Development workflow](docs/PROJECT/development-workflow.md)
 - [System architecture diagram](docs/diagrams/system-architecture.drawio)
 - [Report generation flow](docs/diagrams/report-generation-flow.drawio)
+- [Deep analysis consent flow](docs/diagrams/deep-analysis-consent-flow.drawio)
 
 ## Roadmap
 
-The next gates are:
+The current delivery gates are:
 
-1. PRD readiness review.
-2. Technical validation of local logs and license boundaries for all five tools.
-3. Evaluation design for task inference and collaboration scoring.
-4. Vertical-slice issue backlog.
-5. Architecture and implementation planning.
+1. Approve the vertical-slice issue draft.
+2. Validate local logs and license boundaries for OpenCode, WorkBuddy, and Qoder.
+3. Establish the task-inference and collaboration-scoring evaluation baseline.
+4. Approve local runtime, privacy, and data-contract ADRs.
+5. Publish approved issues, then write implementation plans for executable slices.
 
 ## Contributing
 

@@ -6,7 +6,7 @@ Build an open-source, local-first product that helps individuals understand and 
 
 ## Current Phase
 
-Product definition and technical validation.
+PRD readiness complete with assumptions; issue draft and technical validation are in progress.
 
 ## Target User
 
