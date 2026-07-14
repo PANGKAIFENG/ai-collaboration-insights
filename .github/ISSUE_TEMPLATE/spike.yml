@@ -1,0 +1,32 @@
+name: Technical spike
+description: Time-boxed evidence needed before implementation
+title: "[Spike] "
+labels:
+  - spike
+body:
+  - type: textarea
+    id: decision
+    attributes:
+      label: Decision this spike must unblock
+    validations:
+      required: true
+  - type: textarea
+    id: questions
+    attributes:
+      label: Questions to answer
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Required evidence
+      description: Define artifacts, fixtures, commands, or measurements required.
+    validations:
+      required: true
+  - type: textarea
+    id: exit
+    attributes:
+      label: Exit criteria
+      placeholder: "- [ ] ..."
+    validations:
+      required: true

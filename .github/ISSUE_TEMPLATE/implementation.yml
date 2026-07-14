@@ -1,0 +1,46 @@
+name: Implementation slice
+description: A user-visible, end-to-end implementation task
+title: "[Implementation] "
+labels:
+  - implementation
+body:
+  - type: markdown
+    attributes:
+      value: Keep this issue as a narrow, demonstrable vertical slice.
+  - type: textarea
+    id: source
+    attributes:
+      label: Source
+      description: Link the PRD sections, decision, or parent issue.
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: What to build
+      description: Describe the end-to-end user-visible behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      placeholder: "- [ ] ..."
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification
+      description: Describe deterministic checks, tests, evaluation cases, or manual evidence.
+    validations:
+      required: true
+  - type: dropdown
+    id: execution
+    attributes:
+      label: Execution type
+      options:
+        - AFK
+        - HITL
+    validations:
+      required: true

@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/PANGKAIFENG/ai-collaboration-insights/security/advisories/new
+    about: Report credential, local-file, log-parsing, or data-leakage vulnerabilities privately.

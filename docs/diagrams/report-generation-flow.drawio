@@ -1,0 +1,56 @@
+<mxfile host="app.diagrams.net" modified="2026-07-14T00:00:00.000Z" agent="Codex" version="26.0.11">
+  <diagram id="report-generation-flow" name="AI协作复盘台核心流程">
+    <mxGraphModel dx="2100" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2100" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="step-1" value="1. 定时或手动触发&#xa;计算报告时间窗口" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eef4ff;strokeColor=#5b8def;strokeWidth=2;fontSize=17;" vertex="1" parent="1">
+          <mxGeometry x="40" y="190" width="190" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="step-2" value="2. 增量扫描&#xa;读取五类本地日志" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eef4ff;strokeColor=#5b8def;strokeWidth=2;fontSize=17;" vertex="1" parent="1">
+          <mxGeometry x="280" y="190" width="190" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="step-3" value="3. 统一事件&#xa;解析 / 去重 / 标记完整度" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff7db;strokeColor=#d8a437;strokeWidth=2;fontSize=17;" vertex="1" parent="1">
+          <mxGeometry x="520" y="190" width="190" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="step-4" value="4. 还原工作&#xa;区间 / 项目 / 任务 / Agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff7db;strokeColor=#d8a437;strokeWidth=2;fontSize=17;" vertex="1" parent="1">
+          <mxGeometry x="760" y="190" width="190" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="step-5" value="5. 计算使用指标&#xa;频次 / Token / 时间 / 调用" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff7db;strokeColor=#d8a437;strokeWidth=2;fontSize=17;" vertex="1" parent="1">
+          <mxGeometry x="1000" y="190" width="190" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="decision-1" value="AI 配置&#xa;可用？" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff7db;strokeColor=#d8a437;strokeWidth=2;fontSize=17;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1240" y="190" width="160" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="step-6" value="6. AI 分析&#xa;任务 / 产出 / 五维证据 / 建议" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff7db;strokeColor=#d8a437;strokeWidth=2;fontSize=17;" vertex="1" parent="1">
+          <mxGeometry x="1450" y="190" width="190" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="step-7" value="7. 评分与报告&#xa;今日得分 / 28 天 L1-L4" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dff4e6;strokeColor=#2e9c61;strokeWidth=2;fontSize=17;" vertex="1" parent="1">
+          <mxGeometry x="1690" y="190" width="190" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="step-8" value="8. 展示与闭环&#xa;看板 / 纠错 / 导出 / 重算" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dff4e6;strokeColor=#2e9c61;strokeWidth=2;fontSize=17;" vertex="1" parent="1">
+          <mxGeometry x="1930" y="190" width="190" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="branch-1" value="指标版报告&#xa;语义部分标记未生成" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe5e1;strokeColor=#c65d4d;strokeWidth=2;fontSize=17;" vertex="1" parent="1">
+          <mxGeometry x="1450" y="380" width="190" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="branch-2" value="数据源部分失败&#xa;保留可用结果并标记完整度" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe5e1;strokeColor=#c65d4d;strokeWidth=2;fontSize=17;" vertex="1" parent="1">
+          <mxGeometry x="520" y="60" width="250" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#4e7fd1;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="step-1" target="step-2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#4e7fd1;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="step-2" target="step-3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#4e7fd1;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="step-3" target="step-4"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#4e7fd1;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="step-4" target="step-5"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#d8a437;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="step-5" target="decision-1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e6" value="是" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#d8a437;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="decision-1" target="step-6"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e7" value="否" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#c65d4d;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="decision-1" target="branch-1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e8" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2e9c61;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="step-6" target="step-7"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e9" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2e9c61;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="branch-1" target="step-7"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e10" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2e9c61;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="step-7" target="step-8"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e11" value="部分失败" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#c65d4d;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="step-3" target="branch-2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e12" value="继续" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#c65d4d;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="branch-2" target="step-4"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e13" value="用户纠错后重算" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#c65d4d;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="step-8" target="step-4"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,74 @@
+<mxfile host="app.diagrams.net" modified="2026-07-14T00:00:00.000Z" agent="Codex" version="26.0.11">
+  <diagram id="system-architecture" name="AI协作复盘台系统架构">
+    <mxGraphModel dx="1600" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="lane-1" value="外部输入层&#xa;本机日志与用户配置" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eef4ff;strokeColor=#5b8def;strokeWidth=2;fontSize=20;fontStyle=1;verticalAlign=top;spacingTop=16;" vertex="1" parent="1">
+          <mxGeometry x="40" y="80" width="300" height="520" as="geometry"/>
+        </mxCell>
+        <mxCell id="lane-2" value="本地处理层&#xa;只读解析与事实还原" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff7db;strokeColor=#d8a437;strokeWidth=2;fontSize=20;fontStyle=1;verticalAlign=top;spacingTop=16;" vertex="1" parent="1">
+          <mxGeometry x="390" y="80" width="300" height="520" as="geometry"/>
+        </mxCell>
+        <mxCell id="lane-3" value="分析与评估层&#xa;可解释的 AI 判断" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff7db;strokeColor=#d8a437;strokeWidth=2;fontSize=20;fontStyle=1;verticalAlign=top;spacingTop=16;" vertex="1" parent="1">
+          <mxGeometry x="740" y="80" width="300" height="520" as="geometry"/>
+        </mxCell>
+        <mxCell id="lane-4" value="输出与回流层&#xa;看板、报告与纠错" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dff4e6;strokeColor=#2e9c61;strokeWidth=2;fontSize=20;fontStyle=1;verticalAlign=top;spacingTop=16;" vertex="1" parent="1">
+          <mxGeometry x="1090" y="80" width="300" height="520" as="geometry"/>
+        </mxCell>
+        <mxCell id="card-1" value="AI 工具日志&#xa;Codex / Claude Code&#xa;OpenCode / WorkBuddy / Qoder" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#5b8def;strokeWidth=2;fontSize=17;" vertex="1" parent="1">
+          <mxGeometry x="72" y="170" width="236" height="112" as="geometry"/>
+        </mxCell>
+        <mxCell id="card-2" value="用户配置&#xa;日志路径 / 时区 / 调度" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#5b8def;strokeWidth=2;fontSize=17;" vertex="1" parent="1">
+          <mxGeometry x="72" y="330" width="236" height="86" as="geometry"/>
+        </mxCell>
+        <mxCell id="card-3" value="用户自有模型 API&#xa;OpenAI-compatible / Anthropic" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#5b8def;strokeWidth=2;fontSize=17;" vertex="1" parent="1">
+          <mxGeometry x="72" y="460" width="236" height="86" as="geometry"/>
+        </mxCell>
+        <mxCell id="card-4" value="数据源发现与适配&#xa;权限 / 版本 / 增量扫描" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d8a437;strokeWidth=2;fontSize=17;" vertex="1" parent="1">
+          <mxGeometry x="422" y="170" width="236" height="86" as="geometry"/>
+        </mxCell>
+        <mxCell id="card-5" value="统一事件与去重&#xa;会话 / 消息 / 工具 / Token" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d8a437;strokeWidth=2;fontSize=17;" vertex="1" parent="1">
+          <mxGeometry x="422" y="310" width="236" height="86" as="geometry"/>
+        </mxCell>
+        <mxCell id="card-6" value="工作区间与任务归并&#xa;项目 / 并行 Agent / 证据引用" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d8a437;strokeWidth=2;fontSize=17;" vertex="1" parent="1">
+          <mxGeometry x="422" y="450" width="236" height="86" as="geometry"/>
+        </mxCell>
+        <mxCell id="card-7" value="指标引擎&#xa;频次 / Token / 活跃时间 / 调用" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d8a437;strokeWidth=2;fontSize=17;" vertex="1" parent="1">
+          <mxGeometry x="772" y="170" width="236" height="86" as="geometry"/>
+        </mxCell>
+        <mxCell id="card-8" value="标准 / 深度 AI 分析&#xa;任务 / 产出 / 协作模式" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d8a437;strokeWidth=2;fontSize=17;" vertex="1" parent="1">
+          <mxGeometry x="772" y="310" width="236" height="86" as="geometry"/>
+        </mxCell>
+        <mxCell id="card-9" value="评分与风险引擎&#xa;今日得分 / 28 天 L1-L4" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d8a437;strokeWidth=2;fontSize=17;" vertex="1" parent="1">
+          <mxGeometry x="772" y="450" width="236" height="86" as="geometry"/>
+        </mxCell>
+        <mxCell id="card-10" value="本地 Web 看板&#xa;数据 / 成果 / 教练建议" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#2e9c61;strokeWidth=2;fontSize=17;" vertex="1" parent="1">
+          <mxGeometry x="1122" y="170" width="236" height="86" as="geometry"/>
+        </mxCell>
+        <mxCell id="card-11" value="日 / 周 / 月报告&#xa;Markdown / JSON 导出" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#2e9c61;strokeWidth=2;fontSize=17;" vertex="1" parent="1">
+          <mxGeometry x="1122" y="310" width="236" height="86" as="geometry"/>
+        </mxCell>
+        <mxCell id="card-12" value="用户纠错与闭环&#xa;合并 / 拆分 / 重算 / 跟踪" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#2e9c61;strokeWidth=2;fontSize=17;" vertex="1" parent="1">
+          <mxGeometry x="1122" y="450" width="236" height="86" as="geometry"/>
+        </mxCell>
+        <mxCell id="support" value="共享支撑带&#xa;SQLite 本地事实库 / macOS 系统钥匙串 / 报告调度 / 证据与置信度 / 隐私与导出治理" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff1b8;strokeColor=#d8a437;strokeWidth=2;fontSize=17;" vertex="1" parent="1">
+          <mxGeometry x="390" y="640" width="1000" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#4e7fd1;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="card-1" target="card-4"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#4e7fd1;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="card-2" target="card-4"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#4e7fd1;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="card-4" target="card-5"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#4e7fd1;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="card-5" target="card-6"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#4e7fd1;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="card-6" target="card-7"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#d8a437;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="card-3" target="card-8"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e7" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#4e7fd1;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="card-6" target="card-8"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e8" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#4e7fd1;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="card-7" target="card-9"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e9" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#d8a437;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="card-8" target="card-9"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e10" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2e9c61;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="card-9" target="card-10"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e11" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2e9c61;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="card-10" target="card-11"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e12" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2e9c61;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="card-10" target="card-12"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e13" value="重算" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#c65d4d;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="card-12" target="card-6"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
