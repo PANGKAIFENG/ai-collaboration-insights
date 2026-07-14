@@ -201,7 +201,9 @@
     "maturityExactMatch": true,
     "usageOnlyRiskNegativeGate": {
       "goldTestTag": "usage_only_risk_negative",
-      "predictionRiskLabelsMustEqual": []
+      "predictionRiskLabelsMustEqual": [],
+      "predictionComplexityMustMatchGold": true,
+      "predictionDimensionScoresMustMatchGold": true
     }
   },
   "prohibitedScoringInputs": [

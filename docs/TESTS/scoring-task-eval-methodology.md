@@ -79,7 +79,7 @@ Task 2 必须按以下最小 shape 校验 record：
 - boundary F1：每个 case 将 gold/prediction `segmentIds` 视为集合并累计 TP/FP/FN，全数据 micro F1 为 `2TP / (2TP + FP + FN)`；分母为 0 时记 `1.0`。该指标独立报告，不进入 joint task name/project consistency 门禁。
 - aggregation exactness：task score、day score 与 28-day score 必须 exact match。
 - maturity exactness：证据不足、L1、L2、L3、L4 必须 exact match。
-- usage-only risk negative gate：gold `testTags` 含 `usage_only_risk_negative` 时，prediction `riskLabels` 必须为空。
+- usage-only negative gate：gold `testTags` 含 `usage_only_risk_negative` 时，prediction `riskLabels` 必须为空，且 prediction 的 `complexity` 和五维 `dimensionScores` 必须分别与 gold exact match。这样即使复杂度变化未改变日分，或五维分数变化后任务总分恰好抵消，门禁也会失败。
 
 任何门禁失败都必须使基线运行失败。exact match 按上述 decimal 规则比较。
 

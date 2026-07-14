@@ -66,7 +66,7 @@ Threshold-failure 命令按设计 exit 1。`jointTaskNameProjectConsistency.over
 
 这里的 100% 是 harness conformance：prediction 按同一 synthetic contract 构造，用于证明 fixture、runner、聚合与门禁自洽。它不是产品 task inference accuracy，也不能证明真实 model inference 已达到 80% overall 或 70% per-tool。未来实际 inference implementation 必须继续使用同一 prediction contract 独立运行评测。
 
-`usage-only` 反例证明：高 Token、长时长、高 session/tool/Skill/Subagent 数不会自动触发风险，也不会自动提高复杂度或得分；风险与评分必须有任务质量证据。`unavailable` 表示证据不可得，不得补 0，也不得通过重归一化制造分数。
+`usage-only` 反例门禁同时要求风险标签为空、复杂度 exact match、五维分数 exact match，证明高 Token、长时长、高 session/tool/Skill/Subagent 数不会自动触发风险，也不会自动提高复杂度或得分；风险与评分必须有任务质量证据。`unavailable` 表示证据不可得，不得补 0，也不得通过重归一化制造分数。
 
 ## 门槛建议与后续
 
@@ -79,5 +79,6 @@ MVP 建议保持 `jointTaskNameProjectConsistency` 的 80% overall、70% per-too
 - [#33 duplicate tags](https://github.com/PANGKAIFENG/ai-collaboration-insights/issues/33)
 - [#34 eval diagnostics/error slices](https://github.com/PANGKAIFENG/ai-collaboration-insights/issues/34)
 - [#35 optional model-based grader/private local samples](https://github.com/PANGKAIFENG/ai-collaboration-insights/issues/35)
+- [#36 reject gold-only prediction fields](https://github.com/PANGKAIFENG/ai-collaboration-insights/issues/36)
 
 视觉交付已有 [#17](https://github.com/PANGKAIFENG/ai-collaboration-insights/issues/17) 承接，不新建重复 Issue。未来真实 model inference 接入由 [#15](https://github.com/PANGKAIFENG/ai-collaboration-insights/issues/15) 与 [#16](https://github.com/PANGKAIFENG/ai-collaboration-insights/issues/16) 承接；本报告不实现 model grader。

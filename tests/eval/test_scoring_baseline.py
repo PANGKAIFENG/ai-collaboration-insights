@@ -395,16 +395,32 @@ class ScoringBaselineTests(unittest.TestCase):
         self.assertAlmostEqual(runner.boundary_micro_f1(gold, predictions), 2 / 3)
         self.assertEqual(runner.boundary_micro_f1([], []), 1.0)
 
-    def test_usage_only_risk_negative_is_a_gate(self):
+    def test_usage_only_gate_rejects_risk_complexity_and_dimension_changes(self):
         self.gold[0]["testTags"] = ["usage_only_risk_negative"]
         self.predictions[0]["usageContext"] = {
             "tokenCount": 999999,
             "duration": 999999,
         }
-        self.predictions[0]["riskLabels"] = ["high_usage"]
-        report = runner.build_report(self.rubric, self.gold, self.predictions)
-        self.assertFalse(report["gates"]["usageOnlyRiskNegative"])
-        self.assertFalse(report["qualityGatePassed"])
+
+        mutations = []
+        risk_changed = copy.deepcopy(self.predictions)
+        risk_changed[0]["riskLabels"] = ["high_usage"]
+        mutations.append(("risk label", risk_changed))
+
+        complexity_changed = copy.deepcopy(self.predictions)
+        complexity_changed[0]["complexity"] = 3
+        mutations.append(("complexity", complexity_changed))
+
+        dimensions_changed = copy.deepcopy(self.predictions)
+        dimensions_changed[0]["dimensionScores"]["taskDefinition"] = 60
+        dimensions_changed[0]["dimensionScores"]["collaborationOrchestration"] = 40
+        mutations.append(("dimension scores", dimensions_changed))
+
+        for field, predictions in mutations:
+            with self.subTest(field=field):
+                report = runner.build_report(self.rubric, self.gold, predictions)
+                self.assertFalse(report["gates"]["usageOnlyRiskNegative"])
+                self.assertFalse(report["qualityGatePassed"])
 
     def test_cli_emits_json_and_uses_nonzero_for_gate_or_validation_failure(self):
         with tempfile.TemporaryDirectory() as temporary_directory:

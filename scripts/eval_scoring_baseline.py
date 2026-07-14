@@ -62,6 +62,8 @@ EXPECTED_BOUNDARY_CONFIG = {
 EXPECTED_USAGE_GATE = {
     "goldTestTag": "usage_only_risk_negative",
     "predictionRiskLabelsMustEqual": [],
+    "predictionComplexityMustMatchGold": True,
+    "predictionDimensionScoresMustMatchGold": True,
 }
 
 
@@ -586,7 +588,11 @@ def build_report(rubric, gold, predictions):
         correct_total += int(correct)
         if (
             "usage_only_risk_negative" in gold_record["testTags"]
-            and prediction["riskLabels"] != []
+            and (
+                prediction["riskLabels"] != []
+                or prediction["complexity"] != gold_record["complexity"]
+                or prediction["dimensionScores"] != gold_record["dimensionScores"]
+            )
         ):
             usage_negative_passed = False
 
