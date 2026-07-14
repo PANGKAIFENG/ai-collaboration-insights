@@ -20,6 +20,7 @@
 [Judgment] 当前发布选择为：
 
 - 产品状态：`unsupported`，reason code 为 `policy_restriction`
+- 版本附加信息：受观测版本为 `versionCompatibility=observed`；版本兼容性不覆盖政策状态
 - V1 行为：只检测 Qoder IDE 是否安装及其版本，不打开 Qoder 数据目录，不展示伪造的 0
 - 本地分析能力：session、时间、项目、消息、工具、Token、Skill、Subagent 均为 `unavailable` 或 `unverified`
 - 解锁条件：Qoder 官方本地 API/可移植导出、Qoder 书面许可，或经正式法律评估确认的其他依据
@@ -180,15 +181,16 @@ Usage API：
 | 条件 | 状态 | 用户可见行为 |
 | --- | --- | --- |
 | 未安装 Qoder IDE | `not_found` | 展示重新检测，不探测数据目录 |
-| 检测到受观测版本 | `unsupported` + `policy_restriction` | 显示版本、阻塞原因和解锁条件，不显示指标 0 |
-| 未知或未来版本 | `unsupported_version` | fail closed，不尝试 schema 猜测 |
+| 政策未解锁，检测到受观测版本 | `unsupported` + `policy_restriction`，`versionCompatibility=observed` | 显示版本、阻塞原因和解锁条件，不显示指标 0 |
+| 政策未解锁，检测到未知或未来版本 | `unsupported` + `policy_restriction`，`versionCompatibility=unknown` | 政策状态优先；附加提示版本未验证，不尝试 schema 猜测 |
+| 政策已解锁，但版本/schema 未知 | `unsupported_version` | fail closed；完成版本 Spike 前不读取数据 |
 | 只检测到 QoderWork | `not_found` | 不把 QoderWork 归入 Qoder IDE |
 | 官方本地 API/导出出现 | `integration_review_required` | 重新做许可、隐私、版本和 schema Spike |
 | 取得书面许可 | `implementation_blocked` | 仍需 synthetic PoC、ADR 与实现计划批准 |
-| 配置 Teams API 但鉴权失败 | `authentication_required` | 不回退读取本地数据，不输出凭据 |
-| Teams API 限流或部分失败 | `temporarily_unavailable` 或 `partial` | 保留已验证游标，重试或标注完整度 |
 
-Qoder 失败不能阻塞其他数据源。任何 fallback 都不能绕过政策门禁。
+状态优先级为：安装识别 -> 政策门禁 -> 版本兼容性。只要政策未解锁，任何已安装版本都必须返回 `unsupported/policy_restriction`；版本只作为附加信息。`unsupported_version` 只能在政策门禁解除后使用。
+
+Qoder 失败不能阻塞其他数据源。任何 fallback 都不能绕过政策门禁。Teams connector 尚未立项，其鉴权、限流、部分结果和重试状态不属于当前 V1 运行契约。
 
 ## 10. 解锁条件
 

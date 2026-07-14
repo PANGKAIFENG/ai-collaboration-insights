@@ -43,19 +43,19 @@ tests/fixtures/qoder/
 
 ```json
 {
-  "fixture_contract": "qoder-synthetic/v1",
+  "fixtureContract": "qoder-synthetic/v1",
   "source": "synthetic",
   "product": "qoder-ide",
-  "observed_app_version": "1.13.0",
-  "contains_real_user_data": false,
-  "production_local_adapter_authorized": false,
-  "expected_status": "unsupported",
-  "expected_reason_code": "policy_restriction",
-  "expected_data_directory_open_count": 0
+  "observedAppVersion": "1.13.0",
+  "containsRealUserData": false,
+  "localAdapterAuthorized": false,
+  "expectedStatus": "unsupported",
+  "expectedReasonCode": "policy_restriction",
+  "expectedDataDirectoryOpenCount": 0
 }
 ```
 
-Manifest 不得包含生成机器、用户名、真实 home path、组织、邮箱、安装 ID、API key、真实 Bundle 签名值以外的设备信息或上游 schema dump。
+Manifest 不得包含生成机器、用户名、真实 home path、组织、邮箱、安装 ID、API key、真实 Bundle 签名值或其他设备信息，也不得包含上游 schema dump。
 
 ## 4. 合成命名规则
 
@@ -153,7 +153,7 @@ Teams fixture 是未来独立 connector 的测试抽象，不是官方响应 sch
 ### Q01：政策门禁与 open count 0
 
 - 检测到合法签名的 Qoder IDE `1.13.0` synthetic app metadata。
-- `productionLocalAdapterAuthorized=false`。
+- `localAdapterAuthorized=false`。
 - 期望：`unsupported` + `policy_restriction`；data directory open、file read、database connection、settings parser、CLI parser 和 environment parser 六项计数均为 0。
 
 ### Q02：应用未安装
@@ -164,7 +164,8 @@ Teams fixture 是未来独立 connector 的测试抽象，不是官方响应 sch
 ### Q03：未知未来版本
 
 - Bundle ID 正确，版本高于受观测版本。
-- 期望：`unsupported_version`；不猜测 schema，不进入数据目录，不回退到相似产品。
+- `localAdapterAuthorized=false`。
+- 期望：状态仍为 `unsupported` + `policy_restriction`，同时输出 `versionCompatibility=unknown`；政策门禁优先，不猜测 schema、不进入数据目录、不回退到相似产品。
 
 ### Q03A：自定义路径不受支持
 
@@ -189,50 +190,54 @@ Teams fixture 是未来独立 connector 的测试抽象，不是官方响应 sch
 - UI/adapter capability 请求包含 sessions、time ranges、projects、messages、tools、tokens、skills 和 subagents。
 - 期望：sessions/time ranges/projects/messages 为 `unavailable`，tools/tokens/skills/subagents 为 `unverified`；不得输出 0、空集合或推断值。
 
-### Q07：Credits 不是 Token
+### 非规范性 Future Connector Test Ideas
+
+Q07-Q15 是为未来独立 `qoder-teams-api` Issue 保留的非规范性 test ideas，不是 Issue #4 的必需契约、验收标准、当前 expected behavior 或上游 API 契约。Credits 口径、分页、cursor、退避、错误状态、批次语义和 fallback 展示均须在未来 Issue 中依据届时官方文档重新验证。
+
+#### Q07：Credits 不是 Token
 
 - Teams synthetic Credits event 含 `credits`、timestamp、operation、source 和 model tier，但不含 conversation ID。
-- 期望：只输出 Credits 原始单位；Token 相关能力为 `unavailable`，跨工具 Token 汇总不包含该数值，也不与 AI Code Tracking record 建立关联。
+- 候选期望：只输出 Credits 原始单位；Token 相关能力为 `unavailable`，跨工具 Token 汇总不包含该数值，也不与 AI Code Tracking record 建立关联。
 
-### Q08：Teams API 正常分页
+#### Q08：Teams API 正常分页
 
 - 两页 synthetic metrics/usage 响应，cursor 不重复，第二页 `hasMore=false`。
-- 期望：以 `qoder-teams-api` 独立 source 幂等写入，游标只在整页验证成功后推进；不创建 `qoder-local` 记录。
+- 候选期望：以 `qoder-teams-api` 独立 source 幂等写入，游标只在整页验证成功后推进；不得写入本地 source `qoder`。
 
-### Q09：Teams API 鉴权失败
+#### Q09：Teams API 鉴权失败
 
 - synthetic `401`、`403` 和过期凭据错误，错误体含 auth marker。
-- 期望：`authentication_required` 或 `permission_denied`；日志和 UI 不出现 key、header、marker 或错误正文；不得回退读取本地目录。
+- 候选期望：`authentication_required` 或 `permission_denied`；日志和 UI 不出现 key、header、marker 或错误正文；不得回退读取本地目录。
 
-### Q10：Teams API 限流
+#### Q10：Teams API 限流
 
 - synthetic `429`，分别包含合法、缺失和异常 `Retry-After`。
-- 期望：有界退避和 jitter；不忙等、不无限重试、不推进失败页游标；最终状态 `temporarily_unavailable`。
+- 候选期望：有界退避和 jitter；不忙等、不无限重试、不推进失败页游标；未来状态可考虑 `temporarily_unavailable`。
 
-### Q11：部分响应与分页中断
+#### Q11：部分响应与分页中断
 
 - 第一页有效、第二页超时；单页含缺字段、未知 enum 和重复 event ID。
-- 期望：标记 `partial` 和完整度；未知记录 fail closed 或隔离；重试后幂等，不把缺失值补 0，不将部分结果描述为全量。
+- 候选期望：标记 `partial` 和完整度；未知记录 fail closed 或隔离；重试后幂等，不把缺失值补 0，不将部分结果描述为全量。
 
-### Q12：响应损坏与 server error
+#### Q12：响应损坏与 server error
 
 - malformed JSON、错误 content type、oversized payload、`500/502/503/504`。
-- 期望：限制响应体、可恢复重试、不产生半批提交；错误 snapshot 不保存响应正文。
+- 候选期望：限制响应体、可恢复重试、不产生半批提交；错误 snapshot 不保存响应正文。
 
-### Q13：Secret 与隐私 denylist
+#### Q13：Secret 与隐私 denylist
 
 - synthetic request/response/error 中放入 API key、Authorization、cookie、邮箱、组织 ID、repository、文件路径、prompt、response 和三个 marker。
-- 期望：标准化输出、日志、异常、snapshot 和报告均不出现 marker 或敏感值。
+- 候选期望：标准化输出、日志、异常、snapshot 和报告均不出现 marker 或敏感值。
 
-### Q14：组织权限结果与最小权限评审
+#### Q14：组织权限结果与最小权限评审
 
 - 提供两个 synthetic API key context：创建者可访问目标 organization 资源，以及创建者无权访问目标资源；不声明 `metrics read`、`usage read` 等未公开 granular scope。
-- 期望：分别得到成功或明确的权限失败；记录 API key 与 organization 绑定、访问范围大体继承创建者这一已知边界，并将 least-privilege 可行性保留为上线前评审项。权限失败时不建议盲目扩大创建者权限，也不读取本地数据补偿。
+- 候选期望：分别得到成功或明确的权限失败；记录 API key 与 organization 绑定、访问范围大体继承创建者这一已知边界，并将 least-privilege 可行性保留为上线前评审项。权限失败时不建议盲目扩大创建者权限，也不读取本地数据补偿。
 
-### Q15：Fallback 隔离
+#### Q15：Fallback 隔离
 
 - Teams API 未配置、鉴权失败、限流或部分失败，同时本地 Qoder IDE 已安装。
-- 期望：Teams connector 和 IDE detection 分别展示状态；任何 Teams 失败都不能触发本地数据读取。
+- 候选期望：Teams connector 和 IDE detection 分别展示状态；任何 Teams 失败都不能触发本地数据读取。
 
 ### Q16：其他数据源不中断
 
@@ -269,26 +274,26 @@ Qoder IDE：
 }
 ```
 
-Qoder Teams API：
+Qoder Teams API（非规范性 candidate 状态示例，不是当前运行输出）：
 
 ```json
 {
   "source": "qoder-teams-api",
-  "status": "available",
+  "status": "future_connector_not_implemented",
   "capabilities": {
-    "aiCodeMetrics": "available",
-    "usageEvents": "available",
-    "credits": "available",
+    "aiCodeMetrics": "documented_candidate",
+    "usageEvents": "documented_candidate",
+    "credits": "documented_candidate",
     "tokens": "unavailable",
     "messages": "unavailable",
-    "skills": "unverified",
-    "subagents": "unverified"
+    "skills": "unavailable",
+    "subagents": "unavailable"
   },
   "unit": "credits"
 }
 ```
 
-本地生产路径唯一允许的状态是 `not_found`、带 `policy_restriction` reason code 的 `unsupported`，或未知版本的 `unsupported_version`。
+政策门禁未解锁时，本地生产路径唯一允许的顶层状态是 `not_found`，或带 `policy_restriction` reason code 的 `unsupported`。未知/未来版本使用 `versionCompatibility=unknown` 附加表达；`unsupported_version` 只能在 `localAdapterAuthorized=true` 后使用。
 
 ## 9. 隐私扫描规则
 
