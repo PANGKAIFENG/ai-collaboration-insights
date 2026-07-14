@@ -138,4 +138,3 @@ Expected: all required gates pass。
 把不影响 MVP 的 metric polish、额外 archetype、可视化和 model-based grader 分别记录为 GitHub Issue，不扩张当前 PR。Issue #5 仅在人审确认当前门槛建议后关闭。
 
 Commit: `docs(eval): publish MVP scoring baseline`
-
