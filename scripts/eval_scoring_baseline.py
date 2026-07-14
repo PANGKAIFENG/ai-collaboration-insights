@@ -21,6 +21,49 @@ EXPECTED_DIMENSIONS = {
 EVIDENCE_GATE_KEYS = {"iteration", "verification", "asset"}
 TWO_PLACES = Decimal("0.01")
 
+EXPECTED_DECIMAL_CONFIG = {
+    "mode": "ROUND_HALF_UP",
+    "places": 2,
+    "roundAtOutputOf": ["taskScore", "dayScore", "rolling28DayScore"],
+    "nextLayerUsesNormalizedLowerLayer": True,
+    "exactMatchUsesNormalizedValues": True,
+}
+EXPECTED_MATURITY_ASSIGNMENT = {
+    "scoreBandCandidate": "highest_level_whose_scoreFloor_is_met",
+    "evaluationDirection": "from_candidate_downward",
+    "fallbackIgnoresScoreBandCeiling": True,
+    "result": "first_level_whose_evidence_gate_passes",
+}
+EXPECTED_MATURITY_LEVELS = {
+    "L1": {"scoreFloor": 0, "evidenceGate": "none"},
+    "L2": {"scoreFloor": 40, "evidenceGate": "none"},
+    "L3": {"scoreFloor": 60, "minimumIteratedAndVerifiedTasks": 3},
+    "L4": {
+        "scoreFloor": 80,
+        "minimumIteratedAndVerifiedTasks": 5,
+        "minimumReusableAssetTasks": 2,
+    },
+}
+EXPECTED_JOINT_GATE = {
+    "taskNameMatch": "prediction_taskName_in_gold_acceptedTaskNames",
+    "projectMatch": "exact",
+    "caseSensitive": True,
+    "overallMinimum": 0.8,
+    "perToolMinimum": 0.7,
+}
+EXPECTED_BOUNDARY_CONFIG = {
+    "report": True,
+    "includedInJointConsistency": False,
+    "unit": "segmentIds_set_per_case",
+    "aggregation": "micro_over_all_cases",
+    "formula": "2TP/(2TP+FP+FN)",
+    "zeroDenominatorResult": 1.0,
+}
+EXPECTED_USAGE_GATE = {
+    "goldTestTag": "usage_only_risk_negative",
+    "predictionRiskLabelsMustEqual": [],
+}
+
 
 class ValidationError(ValueError):
     """Raised when rubric, gold cases, or predictions violate the contract."""
@@ -72,6 +115,37 @@ def _string_array(value, field, *, non_empty=False, unique=False):
 def _exact_keys(value, expected, field):
     if not isinstance(value, dict) or set(value) != set(expected):
         raise ValidationError(f"{field} must contain exactly: {', '.join(sorted(expected))}")
+
+
+def _matches_fixed_config(actual, expected):
+    if type(actual) is not type(expected):
+        return False
+    if isinstance(expected, dict):
+        return set(actual) == set(expected) and all(
+            _matches_fixed_config(actual[key], expected_value)
+            for key, expected_value in expected.items()
+        )
+    if isinstance(expected, list):
+        return len(actual) == len(expected) and all(
+            _matches_fixed_config(actual_value, expected_value)
+            for actual_value, expected_value in zip(actual, expected)
+        )
+    return actual == expected
+
+
+def _require_fixed_config(actual, expected, field):
+    if not _matches_fixed_config(actual, expected):
+        raise ValidationError(f"{field} does not match the frozen scoring-baseline/v1 contract")
+
+
+def _require_fixed_values(actual, expected, field):
+    if not isinstance(actual, dict):
+        raise ValidationError(f"{field} must be an object")
+    for key, expected_value in expected.items():
+        if key not in actual or not _matches_fixed_config(actual[key], expected_value):
+            raise ValidationError(
+                f"{field}.{key} does not match the frozen scoring-baseline/v1 contract"
+            )
 
 
 def _parse_day(value, field):
@@ -130,6 +204,54 @@ def validate_rubric(rubric):
     missing = [section for section in required_sections if not isinstance(rubric.get(section), dict)]
     if missing:
         raise ValidationError(f"rubric missing object section(s): {', '.join(missing)}")
+
+    aggregation = rubric["aggregation"]
+    _require_fixed_values(
+        aggregation,
+        {"minimumActiveDaysForMaturity": 3},
+        "rubric.aggregation",
+    )
+    _require_fixed_config(
+        aggregation.get("decimal"),
+        EXPECTED_DECIMAL_CONFIG,
+        "rubric.aggregation.decimal",
+    )
+
+    maturity = rubric["maturity"]
+    _require_fixed_values(
+        maturity,
+        {"insufficientActiveDaysResult": None},
+        "rubric.maturity",
+    )
+    _require_fixed_config(
+        maturity.get("assignment"),
+        EXPECTED_MATURITY_ASSIGNMENT,
+        "rubric.maturity.assignment",
+    )
+    for level, expected_values in EXPECTED_MATURITY_LEVELS.items():
+        _require_fixed_values(maturity.get(level), expected_values, f"rubric.maturity.{level}")
+
+    quality_gates = rubric["qualityGates"]
+    _require_fixed_config(
+        quality_gates.get("jointTaskNameProjectConsistency"),
+        EXPECTED_JOINT_GATE,
+        "rubric.qualityGates.jointTaskNameProjectConsistency",
+    )
+    _require_fixed_config(
+        quality_gates.get("boundaryF1"),
+        EXPECTED_BOUNDARY_CONFIG,
+        "rubric.qualityGates.boundaryF1",
+    )
+    _require_fixed_values(
+        quality_gates,
+        {"aggregationExactMatch": True, "maturityExactMatch": True},
+        "rubric.qualityGates",
+    )
+    _require_fixed_config(
+        quality_gates.get("usageOnlyRiskNegativeGate"),
+        EXPECTED_USAGE_GATE,
+        "rubric.qualityGates.usageOnlyRiskNegativeGate",
+    )
 
 
 def _validate_record(record, kind, rubric, position):

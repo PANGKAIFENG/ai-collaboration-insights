@@ -121,6 +121,58 @@ class ScoringBaselineTests(unittest.TestCase):
         bad_prediction[0]["complexity"] = True
         self.assert_validation_error(predictions=bad_prediction)
 
+    def test_rejects_missing_or_changed_execution_rubric_config(self):
+        missing_l4 = copy.deepcopy(self.rubric)
+        del missing_l4["maturity"]["L4"]
+        with self.assertRaises(runner.ValidationError):
+            runner.validate_rubric(missing_l4)
+
+        for invalid_minimum in ("0.8", 0.81):
+            with self.subTest(overallMinimum=invalid_minimum):
+                changed_gate = copy.deepcopy(self.rubric)
+                changed_gate["qualityGates"]["jointTaskNameProjectConsistency"][
+                    "overallMinimum"
+                ] = invalid_minimum
+                with self.assertRaises(runner.ValidationError):
+                    runner.validate_rubric(changed_gate)
+
+        missing_aggregation_config = copy.deepcopy(self.rubric)
+        del missing_aggregation_config["aggregation"]["minimumActiveDaysForMaturity"]
+        with self.assertRaises(runner.ValidationError):
+            runner.validate_rubric(missing_aggregation_config)
+
+        changed_configs = []
+        changed_decimal = copy.deepcopy(self.rubric)
+        changed_decimal["aggregation"]["decimal"]["mode"] = "ROUND_DOWN"
+        changed_configs.append(changed_decimal)
+        changed_assignment = copy.deepcopy(self.rubric)
+        del changed_assignment["maturity"]["assignment"]["result"]
+        changed_configs.append(changed_assignment)
+        changed_l3_gate = copy.deepcopy(self.rubric)
+        changed_l3_gate["maturity"]["L3"]["minimumIteratedAndVerifiedTasks"] = 2
+        changed_configs.append(changed_l3_gate)
+        changed_per_tool = copy.deepcopy(self.rubric)
+        changed_per_tool["qualityGates"]["jointTaskNameProjectConsistency"][
+            "perToolMinimum"
+        ] = 0.69
+        changed_configs.append(changed_per_tool)
+        changed_exact_gate = copy.deepcopy(self.rubric)
+        changed_exact_gate["qualityGates"]["aggregationExactMatch"] = False
+        changed_configs.append(changed_exact_gate)
+        changed_boundary = copy.deepcopy(self.rubric)
+        changed_boundary["qualityGates"]["boundaryF1"]["formula"] = "macro"
+        changed_configs.append(changed_boundary)
+        changed_usage_gate = copy.deepcopy(self.rubric)
+        changed_usage_gate["qualityGates"]["usageOnlyRiskNegativeGate"][
+            "goldTestTag"
+        ] = "changed"
+        changed_configs.append(changed_usage_gate)
+
+        for changed_config in changed_configs:
+            with self.subTest(changed_config=changed_config):
+                with self.assertRaises(runner.ValidationError):
+                    runner.validate_rubric(changed_config)
+
     def test_rejects_missing_or_extra_predictions(self):
         self.assert_validation_error(predictions=self.predictions[:-1])
 
@@ -336,6 +388,16 @@ class ScoringBaselineTests(unittest.TestCase):
             )
             self.assertNotEqual(validation_failure.returncode, 0)
             self.assertIn("validation error", validation_failure.stderr.lower())
+
+            malformed_rubric = copy.deepcopy(self.rubric)
+            del malformed_rubric["maturity"]["L4"]
+            rubric_path.write_text(json.dumps(malformed_rubric), encoding="utf-8")
+            write_jsonl(prediction_path, self.predictions)
+            malformed_rubric_failure = subprocess.run(
+                command, capture_output=True, text=True, check=False
+            )
+            self.assertEqual(malformed_rubric_failure.returncode, 2)
+            self.assertIn("validation error", malformed_rubric_failure.stderr.lower())
 
 
 if __name__ == "__main__":
