@@ -8,7 +8,7 @@
 4. Vertical-slice issue draft, approval, and publication.
 5. Technical feasibility spikes and evaluation design.
 6. Architecture decision records.
-7. Implementation plans for approved issues.
+7. Approved phase roadmap, followed by an issue-level implementation plan after that Issue's blockers resolve.
 8. Test-driven development on issue branches.
 9. Pull request review and required checks.
 10. Release notes, tagged release, and installation verification.
@@ -22,6 +22,8 @@
 - docs/<issue>-<slug>: documentation-only change.
 
 Long-lived develop branches are intentionally avoided. Integration happens through small pull requests into main.
+
+The V1 phase sequence is maintained in `/plans/ai-collaboration-insights-v1.md`. GitHub Issues own live execution state; the roadmap is updated only when sequencing or durable dependencies change.
 
 ## Issue Types
 

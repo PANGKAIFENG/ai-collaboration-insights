@@ -3,7 +3,7 @@
 - Parent PRD: [#1 AI 协作复盘台 V1](https://github.com/PANGKAIFENG/ai-collaboration-insights/issues/1)
 - Source draft: [issue-breakdown-v0.1.md](issue-breakdown-v0.1.md)
 - Published: 2026-07-14
-- Result: all 20 approved product and engineering issues were created.
+- Result: all 22 approved product and engineering backlog Issues were created; one separate repository-governance Issue was also completed.
 
 ## Published Backlog
 
@@ -29,13 +29,16 @@
 | 18 | [#19 Correction and recomputation](https://github.com/PANGKAIFENG/ai-collaboration-insights/issues/19) | AFK | Correction |
 | 19 | [#20 Weekly/monthly report and export](https://github.com/PANGKAIFENG/ai-collaboration-insights/issues/20) | AFK | Report/export |
 | 20 | [#21 Local data and credential deletion](https://github.com/PANGKAIFENG/ai-collaboration-insights/issues/21) | AFK | Privacy |
+| 21 | [#24 CI, test, privacy, and secret gates](https://github.com/PANGKAIFENG/ai-collaboration-insights/issues/24) | AFK | Quality/security |
+| 22 | [#25 macOS install and v0.1.0 release](https://github.com/PANGKAIFENG/ai-collaboration-insights/issues/25) | HITL | Release |
 
 ## Additional Governance Issue
 
-- [#22 Establish governed project documentation structure](https://github.com/PANGKAIFENG/ai-collaboration-insights/issues/22)
+- [#22 Establish governed project documentation structure](https://github.com/PANGKAIFENG/ai-collaboration-insights/issues/22), completed by merged PR [#23](https://github.com/PANGKAIFENG/ai-collaboration-insights/pull/23).
 
 ## Coverage And Gaps
 
-- Coverage: all V1 PRD sections and acceptance criteria map to at least one published Issue.
+- Coverage: all V1 PRD sections, engineering quality gates, and installable macOS release verification map to at least one published Issue.
 - Excluded by PRD: Windows/Linux support, DingTalk integration, cloud accounts, team analytics, public ranking, and telemetry.
-- Remaining assumptions: OpenCode/WorkBuddy/Qoder feasibility, scoring calibration, and the local runtime/security ADR.
+- Remaining assumptions: OpenCode/WorkBuddy/Qoder feasibility, scoring calibration, the local runtime/security ADR, and the ADR decision on signing/notarization.
+- Corrected dependency: #13 is blocked by Codex #8 only; #9-#12 extend the adapter contract later and do not block the first tracer bullet.

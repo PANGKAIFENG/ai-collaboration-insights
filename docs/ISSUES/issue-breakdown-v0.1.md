@@ -1,7 +1,7 @@
 # Issue Breakdown Draft v0.1
 
 - Source PRD：`docs/PRD/ai-collaboration-review-prd-v0.2.md`
-- Mode：`published-after-approval`；已于 2026-07-14 发布为 GitHub Issues #2-#21，编号映射见 `issue-publish-result-v0.1.md`。
+- Mode：`published-after-approval`；已于 2026-07-14 发布为 GitHub Issues #2-#21，并在路线图评审后补充 #24-#25；编号映射见 `issue-publish-result-v0.1.md`。
 - Readiness：`pass with assumptions`；OpenCode、WorkBuddy、Qoder 日志可行性和评分校准必须先完成。
 - Coverage summary：V1 产品范围全部覆盖；钉钉、Windows/Linux、团队与云端能力按非目标排除。
 
@@ -172,7 +172,7 @@
   - [ ] 并行 Agent 区间单独显示且不与人工活跃时间相加。
   - [ ] 低置信度项目或任务保留候选状态和证据引用。
 - Verification：表驱动边界测试覆盖 4:59/5:00/5:01 与 19:59/20:00/20:01、跨项目和时间重叠。
-- Blocked by：Issues 7、8；Issues 9-11 可后续扩展同一契约。
+- Blocked by：Issue 7；Issues 8-11 可后续扩展同一 adapter contract，不阻塞首条 Codex tracer bullet。
 - Open questions：None。
 
 ### 13. 自动生成可补偿、可重算的指标日报
@@ -290,6 +290,37 @@
 - Blocked by：Issues 5、6。
 - Open questions：None。
 
+### 21. 建立 CI、测试、隐私与密钥扫描质量门禁
+
+- Type：AFK
+- Priority / labels：P0 / `implementation`, `foundation`, `evaluation`, `security`, `privacy`
+- Source：第 11.4、15.3、15.4、15.5、18 节及仓库 Definition of Done。
+- What to build：建立随技术栈演进的自动化质量门禁，覆盖 build、type check、lint、unit、integration、适用的 e2e、合成 fixture 边界、隐私约束和敏感信息扫描。
+- Acceptance criteria：
+  - [ ] 每个实现 PR 都运行架构 ADR 确认的必需检查，失败、跳过或 flaky 不得误报为通过。
+  - [ ] 自动扫描 API Key、令牌、真实会话内容、私人绝对路径、数据库和生成报告并阻止疑似泄漏合并。
+  - [ ] 测试只使用合成或不可逆脱敏 fixture，并验证源日志不会被测试写入。
+  - [ ] README、CONTRIBUTING 和 PR 模板记录本地复现命令、证据和例外审批方式。
+- Verification：使用故意失败测试、合成密钥和私人路径 fixture 证明门禁会失败；移除违规内容后证明完整检查通过。
+- Blocked by：Issue 5 决定技术栈后完成工具与命令；技术栈无关的隐私和 fixture 契约可并行定义。
+- Open questions：None。
+
+### 22. 完成 macOS 安装、后台启动与 v0.1.0 发布验证
+
+- Type：HITL
+- Priority / labels：P1 / `implementation`, `foundation`, `security`, `hitl`
+- Source：第 3.3、7、11.4、15.1、15.4、15.5、16、18 节。
+- What to build：交付普通 macOS 用户可安装的首个公开版本，包含本地应用安装、localhost 后台服务、登录启动、19:00 调度、升级、卸载和带校验信息的 `v0.1.0` GitHub Release。
+- Acceptance criteria：
+  - [ ] 干净 macOS 账户无需开发环境即可安装、打开看板并生成首份指标报告。
+  - [ ] 登录和重启后只恢复一个后台实例，错过的报告可补生成，重复启动不产生重复扫描或调度。
+  - [ ] 升级保留 SQLite 数据和设置并有失败恢复路径；卸载明确区分应用、派生数据、Keychain 凭据和只读源日志。
+  - [ ] Release 包含批准的安装方式、SHA-256、版本、兼容范围、已知限制、升级和卸载说明。
+  - [ ] Issue 21 的门禁和干净环境端到端 smoke test 全部通过。
+- Verification：在干净 macOS 用户环境执行安装、首次启动、重启、登录启动、调度补偿、升级、卸载和重装，并人工确认签名/公证与 Release 发布。
+- Blocked by：Issues 5-21；必须先完成全部 V1 用户能力与质量门禁。
+- Open questions：Apple Developer ID 签名与 notarization 是否为 `v0.1.0` 硬门槛，由 Issue 5 的 ADR 决定。
+
 ## Dependency Outline
 
 ```text
@@ -297,7 +328,7 @@
 4 scoring eval -------------> 15 scoring
 5 architecture ADR ---------> 6 app foundation
 6 foundation ---------------> 7/8/9/10/11 imports
-7 + 8 ----------------------> 12 interval/task reconstruction
+7 --------------------------> 12 interval/task reconstruction
 12 -------------------------> 13 metric daily report
 13 + 12 --------------------> 14 standard AI review
 4 + 12 + 14 ---------------> 15 scoring
@@ -306,6 +337,9 @@
 12 + 15 + 16 --------------> 18 correction/recompute
 13 + 16 --------------------> 19 weekly/monthly/export
 5 + 6 ----------------------> 20 local deletion
+5 --------------------------> 21 quality-gate tooling
+21 -------------------------> all implementation/release slices
+5-21 ------------------------> 22 installable macOS v0.1.0
 ```
 
 ## Coverage Matrix
@@ -323,13 +357,13 @@
 | 9 评分与成熟度 | 4, 15 | Covered | eval 是实现前置门禁 |
 | 10 模型与分析 | 14, 17 | Covered | 标准授权与逐次深度确认分开 |
 | 11 本地事实、纠错、生命周期 | 5, 18, 20 | Covered | 删除不触碰源日志 |
-| 12 产品模块 | 5-20 | Covered | 按用户可见 vertical slices 承接，不按层拆票 |
-| 13 状态与人工接管 | 6, 13, 14, 17, 18, 20 | Covered | 状态、确认与失败行为可测试 |
-| 14 异常与边界 | 6-20 | Covered | 分散到对应主路径验收 |
-| 15 验收标准 | 4, 6-20 | Covered | 每条转入 issue acceptance/verification |
-| 16 已确认决策 | 5, 6, 16 | Covered | 技术实现仍由 ADR 决定 |
+| 12 产品模块 | 5-22 | Covered | 按用户可见 vertical slices 承接，不按层拆票 |
+| 13 状态与人工接管 | 6, 13, 14, 17, 18, 20, 22 | Covered | 状态、确认与失败行为可测试 |
+| 14 异常与边界 | 6-22 | Covered | 分散到对应主路径和发布验收 |
+| 15 验收标准 | 4, 6-22 | Covered | 每条转入 Issue acceptance/verification，21 提供自动门禁 |
+| 16 已确认决策 | 5, 6, 16, 22 | Covered | 技术实现仍由 ADR 决定，22 验证最终分发 |
 | 17 待验证假设 | 1-5 | Covered | 不把未知日志或评分包装为 AFK 实现 |
-| 18 后续门禁 | 1-5 + approval | Covered | 本草案获批后才发布 Issues |
+| 18 后续门禁 | 1-5, 21 + approval | Covered | 已发布 Issues；spike、ADR、eval 和 CI 继续作为实施门禁 |
 | Windows/Linux、钉钉、云端、团队、排行榜 | None | Excluded | PRD 明确为 V1 非目标 |
 
 ## Suggested Labels
@@ -337,7 +371,7 @@
 - Type：`spike`, `implementation`, `architecture`, `evaluation`
 - Execution：`afk`, `hitl`
 - Priority：`P0`, `P1`
-- Area：`data-source`, `dashboard`, `report`, `ai-analysis`, `scoring`, `privacy`
+- Area：`data-source`, `dashboard`, `report`, `ai-analysis`, `scoring`, `privacy`, `security`, `foundation`
 - Tool：`codex`, `claude-code`, `opencode`, `workbuddy`, `qoder`
 
 ## Approval Needed

@@ -2,7 +2,7 @@
 
 ## Current Stage
 
-This repository is in product definition and technical validation. Do not add production code until the PRD review, technical spikes, and implementation plan are approved.
+The PRD and V1 phase roadmap are approved. This repository is in technical validation. Do not add production code for an issue until its relevant spikes and architecture decisions are complete and its issue-level implementation plan is approved.
 
 ## Privacy
 
@@ -29,8 +29,9 @@ This repository is in product definition and technical validation. Do not add pr
 - Shared implementation packages: packages/
 - Automated tests and synthetic fixtures: tests/
 - Repository automation and validation scripts: scripts/
+- Approved phase roadmaps and issue-level implementation plans: plans/
 
-Do not create a new top-level documentation or code directory when an existing lane owns the artifact. The exact app and package boundaries remain subject to the approved architecture ADR.
+Do not create a new top-level documentation or code directory when an existing lane owns the artifact. The exact app and package boundaries remain subject to the approved architecture ADR. Keep GitHub Issues as the execution backlog; do not duplicate their status tracking in plans.
 
 ## Delivery Rules
 

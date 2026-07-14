@@ -18,6 +18,8 @@
 | `RELEASES/` | Release record | Release plans, notes, compatibility and installation verification |
 | `diagrams/` | Editable diagrams | Draw.io architecture and flow sources referenced by other documents |
 
+The repository-level `/plans/` lane owns approved phase roadmaps and issue-level implementation plans. It sequences the versioned product baseline and published Issues; it does not replace either source of truth.
+
 ## Source-of-Truth Rules
 
 1. A released PRD in `PRD/` is the product baseline. Its GitHub parent Issue tracks discussion and delivery status but does not replace the file.
@@ -27,12 +29,14 @@
 5. Generated personal reports, real session logs, API keys, private paths, and customer content are never committed.
 6. Stage handoffs are temporary coordination artifacts; durable conclusions must be copied into their owning PRD, ADR, technical, UI, or test document.
 7. Use lowercase kebab-case filenames except established uppercase governance files and numbered ADRs.
+8. Put phase roadmaps in `/plans/`; create an issue-level implementation plan only after that Issue's blockers and required decisions are resolved.
 
 ## Current Baselines
 
 - Product: [AI 协作复盘台 PRD v0.2](PRD/ai-collaboration-review-prd-v0.2.md)
 - Readiness: [PRD Review v0.1](REVIEWS/prd-review-v0.1.md)
 - Backlog: [Published Issue Backlog v0.1](ISSUES/issue-publish-result-v0.1.md)
+- Roadmap: [AI Collaboration Insights V1](../plans/ai-collaboration-insights-v1.md)
 - Project context: [Project Context](PROJECT/project-context.md)
 - Delivery workflow: [Development Workflow](PROJECT/development-workflow.md)
 - Repository layout: [Repository Structure](PROJECT/repository-structure.md)
