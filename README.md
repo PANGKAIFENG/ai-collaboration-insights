@@ -2,7 +2,7 @@
 
 Local-first AI collaboration analytics and review dashboard for Codex, Claude Code, OpenCode, WorkBuddy, and Qoder.
 
-> Status: PRD approved with assumptions; technical spikes and architecture decisions are next. There is no installable release yet.
+> Status: PRD and V1 implementation roadmap approved; technical spikes and architecture decisions are next. There is no installable release yet.
 
 ## Why
 
@@ -41,6 +41,7 @@ This project turns local session evidence into:
 - [PRD readiness review](docs/REVIEWS/prd-review-v0.1.md)
 - [Issue breakdown draft](docs/ISSUES/issue-breakdown-v0.1.md)
 - [Published issue backlog](docs/ISSUES/issue-publish-result-v0.1.md)
+- [V1 implementation roadmap](plans/ai-collaboration-insights-v1.md)
 - [Project context](docs/PROJECT/project-context.md)
 - [Development workflow](docs/PROJECT/development-workflow.md)
 - [System architecture diagram](docs/diagrams/system-architecture.drawio)
@@ -49,13 +50,16 @@ This project turns local session evidence into:
 
 ## Roadmap
 
-The current delivery gates are:
+The approved delivery sequence is:
 
-1. Validate local logs and license boundaries for OpenCode, WorkBuddy, and Qoder.
-2. Establish the task-inference and collaboration-scoring evaluation baseline.
-3. Approve local runtime, privacy, and data-contract ADRs.
-4. Write implementation plans for executable slices.
-5. Build and verify the first end-to-end local reporting path.
+1. Complete data-source spikes, scoring evaluation, architecture ADRs, and the initial quality-gate contract (#2-#6, #24).
+2. Establish the local application foundation (#7).
+3. Deliver the Codex-to-metrics-report tracer bullet without waiting for Claude Code (#8, #13, #14).
+4. Extend the verified adapter contract to Claude Code, OpenCode, WorkBuddy, and Qoder (#9-#12).
+5. Add authorized AI review, evidence-backed scoring, and the overview dashboard (#15-#17).
+6. Add confirmed deep analysis and user correction/recomputation (#18-#19).
+7. Add weekly/monthly reports, export, and local deletion (#20-#21).
+8. Pass release gates and publish the installable macOS `v0.1.0` (#24-#25).
 
 ## Contributing
 

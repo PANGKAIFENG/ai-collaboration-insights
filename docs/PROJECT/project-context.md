@@ -6,7 +6,7 @@ Build an open-source, local-first product that helps individuals understand and 
 
 ## Current Phase
 
-PRD readiness is complete with assumptions and the issue backlog is published; technical validation and architecture decisions are next.
+PRD readiness is complete with assumptions, the issue backlog is published, and the V1 phase roadmap is approved; technical validation and architecture decisions are next.
 
 ## Target User
 
