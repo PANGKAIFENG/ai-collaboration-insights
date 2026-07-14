@@ -35,3 +35,6 @@ coverage/
 *.log
 tmp/
 .cache/
+
+# Isolated development worktrees
+.worktrees/
