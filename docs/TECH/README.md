@@ -7,3 +7,4 @@ Technical documents must link to an accepted PRD requirement and, when applicabl
 ## Current Technical Spikes
 
 - [OpenCode 本地日志适配可行性报告](opencode-log-feasibility.md)
+- [WorkBuddy 本地数据适配可行性报告](workbuddy-log-feasibility.md)
