@@ -1,0 +1,84 @@
+{
+  "contractVersion": "scoring-baseline/v1",
+  "dataset": {
+    "caseCount": 100,
+    "casesPerTool": 20,
+    "sourceTools": [
+      "codex",
+      "claude-code",
+      "opencode",
+      "workbuddy",
+      "qoder"
+    ],
+    "source": "synthetic"
+  },
+  "availabilityStates": [
+    "present",
+    "observed_absent",
+    "unavailable"
+  ],
+  "dimensions": {
+    "taskDefinition": 20,
+    "collaborationOrchestration": 20,
+    "iterationDepth": 20,
+    "verificationClosure": 25,
+    "assetCreation": 15
+  },
+  "complexityWeights": [
+    1,
+    2,
+    3
+  ],
+  "aggregation": {
+    "taskUnavailableDimensionResult": null,
+    "taskScore": "weighted_sum_when_all_dimensions_available",
+    "dayScore": "complexity_weighted_mean_of_valid_tasks",
+    "dayWithoutValidTasksResult": null,
+    "rolling28DayScore": "equal_mean_of_valid_active_day_scores",
+    "minimumActiveDaysForMaturity": 3
+  },
+  "maturity": {
+    "assignment": "highest_level_whose_score_and_evidence_gates_pass",
+    "insufficientActiveDaysResult": null,
+    "L1": {
+      "minimumScore": 0,
+      "maximumScore": 39
+    },
+    "L2": {
+      "minimumScore": 40,
+      "maximumScore": 59
+    },
+    "L3": {
+      "minimumScore": 60,
+      "maximumScore": 79,
+      "minimumIteratedAndVerifiedTasks": 3
+    },
+    "L4": {
+      "minimumScore": 80,
+      "maximumScore": 100,
+      "minimumIteratedAndVerifiedTasks": 5,
+      "minimumReusableAssetTasks": 2
+    }
+  },
+  "qualityGates": {
+    "jointTaskProjectConsistencyOverallMinimum": 0.8,
+    "jointTaskProjectConsistencyPerToolMinimum": 0.7,
+    "reportBoundaryF1": true,
+    "aggregationExactMatch": true,
+    "maturityExactMatch": true,
+    "usageOnlyRiskNegativeGate": true
+  },
+  "prohibitedScoringInputs": [
+    "tokenCount",
+    "duration",
+    "sessionCount",
+    "toolCallCount",
+    "skillCount",
+    "subagentCount"
+  ],
+  "policy": {
+    "workbuddy": "unsupported/policy_restriction",
+    "qoder": "unsupported/policy_restriction",
+    "syntheticEvidenceDoesNotChangeAdapterStatus": true
+  }
+}
