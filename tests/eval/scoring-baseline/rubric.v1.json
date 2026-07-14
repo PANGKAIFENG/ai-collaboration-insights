@@ -17,6 +17,39 @@
     "observed_absent",
     "unavailable"
   ],
+  "recordContract": {
+    "goldRequiredFields": [
+      "caseId",
+      "sourceTool",
+      "evidenceWindow",
+      "taskBoundary",
+      "project",
+      "acceptedTaskNames",
+      "deliverable",
+      "verificationStatus",
+      "complexity",
+      "dimensionScores",
+      "evidenceGates",
+      "riskLabels",
+      "confidence",
+      "availability"
+    ],
+    "predictionRequiredFields": [
+      "caseId",
+      "taskBoundary",
+      "project",
+      "taskName",
+      "deliverable",
+      "verificationStatus",
+      "complexity",
+      "dimensionScores",
+      "evidenceGates",
+      "riskLabels",
+      "confidence"
+    ],
+    "deliverableMeaning": "task_output_not_necessarily_reusable",
+    "reusableAssetRequires": "asset_evidence_gate_present"
+  },
   "dimensions": {
     "taskDefinition": 20,
     "collaborationOrchestration": 20,
@@ -38,32 +71,46 @@
     "minimumActiveDaysForMaturity": 3
   },
   "maturity": {
-    "assignment": "highest_level_whose_score_and_evidence_gates_pass",
+    "assignment": {
+      "scoreBandCandidate": "highest_level_whose_scoreFloor_is_met",
+      "evaluationDirection": "from_candidate_downward",
+      "fallbackIgnoresScoreBandCeiling": true,
+      "result": "first_level_whose_evidence_gate_passes"
+    },
     "insufficientActiveDaysResult": null,
     "L1": {
-      "minimumScore": 0,
-      "maximumScore": 39
+      "scoreFloor": 0,
+      "scoreBandCeiling": 39,
+      "evidenceGate": "none"
     },
     "L2": {
-      "minimumScore": 40,
-      "maximumScore": 59
+      "scoreFloor": 40,
+      "scoreBandCeiling": 59,
+      "evidenceGate": "none"
     },
     "L3": {
-      "minimumScore": 60,
-      "maximumScore": 79,
+      "scoreFloor": 60,
+      "scoreBandCeiling": 79,
       "minimumIteratedAndVerifiedTasks": 3
     },
     "L4": {
-      "minimumScore": 80,
-      "maximumScore": 100,
+      "scoreFloor": 80,
+      "scoreBandCeiling": 100,
       "minimumIteratedAndVerifiedTasks": 5,
       "minimumReusableAssetTasks": 2
     }
   },
   "qualityGates": {
-    "jointTaskProjectConsistencyOverallMinimum": 0.8,
-    "jointTaskProjectConsistencyPerToolMinimum": 0.7,
-    "reportBoundaryF1": true,
+    "jointTaskNameProjectConsistency": {
+      "taskNameMatch": "prediction_taskName_in_gold_acceptedTaskNames",
+      "projectMatch": "exact",
+      "overallMinimum": 0.8,
+      "perToolMinimum": 0.7
+    },
+    "boundaryF1": {
+      "report": true,
+      "includedInJointConsistency": false
+    },
     "aggregationExactMatch": true,
     "maturityExactMatch": true,
     "usageOnlyRiskNegativeGate": true
