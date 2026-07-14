@@ -1,7 +1,7 @@
 # Issue Breakdown Draft v0.1
 
 - Source PRD：`docs/PRD/ai-collaboration-review-prd-v0.2.md`
-- Mode：`publish-after-approval`，当前仅为草案。
+- Mode：`published-after-approval`；已于 2026-07-14 发布为 GitHub Issues #2-#21，编号映射见 `issue-publish-result-v0.1.md`。
 - Readiness：`pass with assumptions`；OpenCode、WorkBuddy、Qoder 日志可行性和评分校准必须先完成。
 - Coverage summary：V1 产品范围全部覆盖；钉钉、Windows/Linux、团队与云端能力按非目标排除。
 
@@ -342,9 +342,7 @@
 
 ## Approval Needed
 
-发布 GitHub Issues 前请确认：
+用户已确认本版粒度、依赖、HITL/AFK 标注和 labels，并授权发布。后续如需合并、拆分、关闭或调整优先级，应以已发布 Issues 为操作对象并保留本草案作为来源快照。
 
-1. 20 个 issue 的粒度是否合适，尤其是五个数据源是否保持独立 issue。
-2. Issues 2、3、4、5、16 标为 HITL 是否正确。
-3. P0/P1 和依赖顺序是否符合“先证据、再基础链路、后完整体验”。
-4. 是否按 Suggested Labels 在仓库创建 labels，并按依赖顺序发布全部 Issues。
+- Published backlog: `docs/ISSUES/issue-publish-result-v0.1.md`
+- Parent PRD: GitHub Issue #1

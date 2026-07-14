@@ -2,7 +2,7 @@
 
 Local-first AI collaboration analytics and review dashboard for Codex, Claude Code, OpenCode, WorkBuddy, and Qoder.
 
-> Status: product definition and technical validation. There is no installable release yet.
+> Status: PRD approved with assumptions; technical spikes and architecture decisions are next. There is no installable release yet.
 
 ## Why
 
@@ -35,9 +35,12 @@ This project turns local session evidence into:
 
 ## Documentation
 
+- [Documentation index](docs/README.md)
 - [Product requirements](docs/PRD/ai-collaboration-review-prd-v0.2.md)
+- [GitHub PRD and delivery tracking](https://github.com/PANGKAIFENG/ai-collaboration-insights/issues/1)
 - [PRD readiness review](docs/REVIEWS/prd-review-v0.1.md)
 - [Issue breakdown draft](docs/ISSUES/issue-breakdown-v0.1.md)
+- [Published issue backlog](docs/ISSUES/issue-publish-result-v0.1.md)
 - [Project context](docs/PROJECT/project-context.md)
 - [Development workflow](docs/PROJECT/development-workflow.md)
 - [System architecture diagram](docs/diagrams/system-architecture.drawio)
@@ -48,11 +51,11 @@ This project turns local session evidence into:
 
 The current delivery gates are:
 
-1. Approve the vertical-slice issue draft.
-2. Validate local logs and license boundaries for OpenCode, WorkBuddy, and Qoder.
-3. Establish the task-inference and collaboration-scoring evaluation baseline.
-4. Approve local runtime, privacy, and data-contract ADRs.
-5. Publish approved issues, then write implementation plans for executable slices.
+1. Validate local logs and license boundaries for OpenCode, WorkBuddy, and Qoder.
+2. Establish the task-inference and collaboration-scoring evaluation baseline.
+3. Approve local runtime, privacy, and data-contract ADRs.
+4. Write implementation plans for executable slices.
+5. Build and verify the first end-to-end local reporting path.
 
 ## Contributing
 
