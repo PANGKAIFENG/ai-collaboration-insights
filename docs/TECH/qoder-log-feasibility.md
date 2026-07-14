@@ -137,12 +137,19 @@ QoderWork 不是 Qoder IDE 的别名、旧版本或数据源 fallback。本 Issu
 
 ## 7. Qoder Teams OpenAPI 替代路径
 
-[Evidence, L1] Qoder Teams 提供官方 OpenAPI 和 Analytics 能力，可作为未来独立 connector 的调研入口：
+[Evidence, L1] Qoder Teams 提供官方 OpenAPI 和 Analytics 能力，可作为未来独立 connector 的调研入口，但必须区分两个能力面：
 
-- AI Code Metrics：AI code stats、daily trends、member ranking
-- change/commit 数据：repository、file extension、commit attribution 与 CSV export
-- usage 数据：conversation ID，以及 Agent、NEXT、QUEST、INLINECHAT 等来源
-- Credits usage events：事件时间、operation、source 与 model tier
+AI Code Tracking / Analytics：
+
+- AI code stats、daily trends、member ranking
+- change/commit 数据中的 repository、file extension、commit attribution 与 CSV export
+- conversation ID，以及 AGENT、NEXT、QUEST、INLINECHAT 等 AI code source
+
+Usage API：
+
+- Credits usage event 的 timestamp、operation、source 与 model tier 等用量属性
+
+官方材料没有在本 Spike 中建立 AI Code Tracking 记录与 Credits usage event 的可关联契约。不能假设 `conversationId` 存在于 Credits event，也不能通过时间、source 或其他字段推测两类记录可 join。
 
 [Evidence, L1] 当前官方材料确认的边界包括：
 
