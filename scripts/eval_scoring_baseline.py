@@ -189,16 +189,21 @@ def validate_rubric(rubric):
         or dataset.get("casesPerTool") != 20
         or not isinstance(source_tools, list)
         or len(source_tools) != 5
-        or len(set(source_tools)) != 5
         or any(not _non_empty_string(tool) for tool in source_tools)
+        or len(set(source_tools)) != 5
     ):
         raise ValidationError("rubric dataset must define 100 cases and 20 cases for each of 5 tools")
 
     states = rubric.get("availabilityStates")
     if states != ["present", "observed_absent", "unavailable"]:
         raise ValidationError("rubric availabilityStates must use the fixed three states")
-    if not isinstance(rubric.get("prohibitedScoringInputs"), list):
-        raise ValidationError("rubric.prohibitedScoringInputs must be an array")
+    prohibited_inputs = rubric.get("prohibitedScoringInputs")
+    if not isinstance(prohibited_inputs, list) or any(
+        not _non_empty_string(value) for value in prohibited_inputs
+    ):
+        raise ValidationError(
+            "rubric.prohibitedScoringInputs must be an array of non-empty strings"
+        )
 
     required_sections = ("recordContract", "aggregation", "maturity", "qualityGates")
     missing = [section for section in required_sections if not isinstance(rubric.get(section), dict)]
@@ -260,8 +265,14 @@ def _validate_record(record, kind, rubric, position):
         raise ValidationError(f"{label} must be an object")
     required_key = "goldRequiredFields" if kind == "gold" else "predictionRequiredFields"
     required = rubric["recordContract"].get(required_key)
-    if not isinstance(required, list):
-        raise ValidationError(f"rubric.recordContract.{required_key} must be an array")
+    if (
+        not isinstance(required, list)
+        or any(not _non_empty_string(field) for field in required)
+        or len(set(required)) != len(required)
+    ):
+        raise ValidationError(
+            f"rubric.recordContract.{required_key} must be an array of unique strings"
+        )
     missing = sorted(set(required) - set(record))
     if missing:
         raise ValidationError(f"{label} missing required field(s): {', '.join(missing)}")
@@ -301,7 +312,12 @@ def _validate_record(record, kind, rubric, position):
         unique=True,
     )
 
-    if record.get("verificationStatus") not in {"verified", "unverified", "unavailable"}:
+    verification_status = record.get("verificationStatus")
+    if not isinstance(verification_status, str) or verification_status not in {
+        "verified",
+        "unverified",
+        "unavailable",
+    }:
         raise ValidationError(f"{label}.verificationStatus is invalid")
     if record.get("complexity") not in rubric["complexityWeights"] or isinstance(
         record.get("complexity"), bool
@@ -317,7 +333,7 @@ def _validate_record(record, kind, rubric, position):
     for dimension in dimension_keys:
         state = availability[dimension]
         score = scores[dimension]
-        if state not in states:
+        if not isinstance(state, str) or state not in states:
             raise ValidationError(f"{label}.availability.{dimension} is invalid")
         if state == "unavailable":
             if score is not None:
@@ -331,7 +347,7 @@ def _validate_record(record, kind, rubric, position):
 
     gates = record.get("evidenceGates")
     _exact_keys(gates, EVIDENCE_GATE_KEYS, f"{label}.evidenceGates")
-    if any(value not in states for value in gates.values()):
+    if any(not isinstance(value, str) or value not in states for value in gates.values()):
         raise ValidationError(f"{label}.evidenceGates contains an invalid state")
 
     _string_array(record.get("riskLabels"), f"{label}.riskLabels", unique=True)
@@ -502,7 +518,6 @@ def score_records(rubric, records, day_by_case=None):
         for day, day_records in records_by_day.items()
         if first_day <= day <= latest_day
         for record in day_records
-        if task_scores[record["caseId"]] is not None
     ]
     maturity = assign_maturity(
         rubric, rolling_score, len(rolling_days), rolling_records

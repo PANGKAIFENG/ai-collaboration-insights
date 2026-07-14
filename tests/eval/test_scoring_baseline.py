@@ -208,6 +208,35 @@ class ScoringBaselineTests(unittest.TestCase):
             self.rubric, valid_unavailable_gold, valid_unavailable_prediction
         )
 
+    def test_unhashable_json_values_are_validation_errors(self):
+        invalid_source_tools = copy.deepcopy(self.rubric)
+        invalid_source_tools["dataset"]["sourceTools"][0] = {"tool": "codex"}
+        with self.assertRaises(runner.ValidationError):
+            runner.validate_rubric(invalid_source_tools)
+
+        invalid_availability = copy.deepcopy(self.predictions)
+        invalid_availability[0]["availability"]["taskDefinition"] = {
+            "state": "present"
+        }
+        self.assert_validation_error(predictions=invalid_availability)
+
+        invalid_evidence_gate = copy.deepcopy(self.predictions)
+        invalid_evidence_gate[0]["evidenceGates"]["iteration"] = ["present"]
+        self.assert_validation_error(predictions=invalid_evidence_gate)
+
+        invalid_required_fields = copy.deepcopy(self.rubric)
+        invalid_required_fields["recordContract"]["predictionRequiredFields"].append(
+            {"field": "taskName"}
+        )
+        self.assert_validation_error(rubric=invalid_required_fields)
+
+        invalid_prohibited_inputs = copy.deepcopy(self.rubric)
+        invalid_prohibited_inputs["prohibitedScoringInputs"].append(
+            {"field": "tokenCount"}
+        )
+        with self.assertRaises(runner.ValidationError):
+            runner.validate_rubric(invalid_prohibited_inputs)
+
     def test_decimal_scoring_normalizes_each_aggregation_layer(self):
         records = []
         day_by_case = {}
@@ -276,6 +305,41 @@ class ScoringBaselineTests(unittest.TestCase):
         self.assertEqual(
             runner.assign_maturity(self.rubric, Decimal("85.00"), 3, records), "L4"
         )
+
+    def test_unavailable_task_scores_still_count_for_maturity_evidence(self):
+        valid_records = copy.deepcopy(self.predictions[:3])
+        day_by_case = {}
+        for index, record in enumerate(valid_records):
+            record["dimensionScores"] = dimensions(85)
+            record["evidenceGates"] = {
+                "iteration": "observed_absent",
+                "verification": "observed_absent",
+                "asset": "observed_absent",
+            }
+            day_by_case[record["caseId"]] = date(2026, 1, index + 1)
+
+        unavailable_records = copy.deepcopy(self.predictions[3:8])
+        for index, record in enumerate(unavailable_records):
+            record["dimensionScores"]["taskDefinition"] = None
+            record["availability"]["taskDefinition"] = "unavailable"
+            record["evidenceGates"] = {
+                "iteration": "present",
+                "verification": "present",
+                "asset": "present" if index < 2 else "observed_absent",
+            }
+            day_by_case[record["caseId"]] = date(2026, 1, (index % 3) + 1)
+
+        l3_summary = runner.score_records(
+            self.rubric, valid_records + unavailable_records[:3], day_by_case
+        )
+        self.assertEqual(l3_summary["rolling28DayScore"], Decimal("85.00"))
+        self.assertEqual(l3_summary["maturity"], "L3")
+
+        l4_summary = runner.score_records(
+            self.rubric, valid_records + unavailable_records, day_by_case
+        )
+        self.assertEqual(l4_summary["rolling28DayScore"], Decimal("85.00"))
+        self.assertEqual(l4_summary["maturity"], "L4")
 
     def test_report_exactly_compares_gold_and_prediction_aggregates_and_maturity(self):
         report = runner.build_report(self.rubric, self.gold, self.predictions)
@@ -398,6 +462,55 @@ class ScoringBaselineTests(unittest.TestCase):
             )
             self.assertEqual(malformed_rubric_failure.returncode, 2)
             self.assertIn("validation error", malformed_rubric_failure.stderr.lower())
+
+    def test_cli_maps_unhashable_json_types_to_validation_errors(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            directory = Path(temporary_directory)
+            rubric_path = directory / "rubric.json"
+            gold_path = directory / "gold.jsonl"
+            prediction_path = directory / "predictions.jsonl"
+
+            def write_jsonl(path, records):
+                path.write_text(
+                    "".join(json.dumps(record) + "\n" for record in records),
+                    encoding="utf-8",
+                )
+
+            write_jsonl(gold_path, self.gold)
+            command = [
+                sys.executable,
+                str(SCRIPT_PATH),
+                "--rubric",
+                str(rubric_path),
+                "--cases",
+                str(gold_path),
+                "--predictions",
+                str(prediction_path),
+            ]
+
+            invalid_inputs = []
+            source_tool_object = copy.deepcopy(self.rubric)
+            source_tool_object["dataset"]["sourceTools"][0] = {"tool": "codex"}
+            invalid_inputs.append(("sourceTool object", source_tool_object, self.predictions))
+            availability_object = copy.deepcopy(self.predictions)
+            availability_object[0]["availability"]["taskDefinition"] = {
+                "state": "present"
+            }
+            invalid_inputs.append(("availability object", self.rubric, availability_object))
+            evidence_gate_array = copy.deepcopy(self.predictions)
+            evidence_gate_array[0]["evidenceGates"]["iteration"] = ["present"]
+            invalid_inputs.append(("evidence gate array", self.rubric, evidence_gate_array))
+
+            for case, rubric, predictions in invalid_inputs:
+                with self.subTest(case=case):
+                    rubric_path.write_text(json.dumps(rubric), encoding="utf-8")
+                    write_jsonl(prediction_path, predictions)
+                    result = subprocess.run(
+                        command, capture_output=True, text=True, check=False
+                    )
+                    self.assertEqual(result.returncode, 2)
+                    self.assertIn("validation error", result.stderr.lower())
+                    self.assertNotIn("traceback", result.stderr.lower())
 
 
 if __name__ == "__main__":
