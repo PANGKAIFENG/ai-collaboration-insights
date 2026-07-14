@@ -126,6 +126,8 @@ Teams fixture 是未来独立 connector 的测试抽象，不是官方响应 sch
 
 expected 输出必须保留 `credits` 单位，不得生成 `tokens`、`inputTokens`、`outputTokens`、`cachedTokens` 或 Credits-to-Token 换算值。
 
+本节使用的 cursor、分页、错误码、header 和 enum 仅是鲁棒性测试输入，不表示官方 API 已确认这些具体字段或传输契约。正式 connector 必须以届时官方文档重新建立契约，未确认字段不得进入生产实现。
+
 ## 7. 必需场景
 
 ### Q01：政策门禁与 open count 0
@@ -143,6 +145,11 @@ expected 输出必须保留 `credits` 单位，不得生成 `tokens`、`inputTok
 
 - Bundle ID 正确，版本高于受观测版本。
 - 期望：`unsupported_version`；不猜测 schema，不进入数据目录，不回退到相似产品。
+
+### Q03A：自定义路径不受支持
+
+- synthetic settings、CLI 或 environment 输入声明一个自定义数据路径。
+- 期望：V1 忽略该路径，状态保持 `unsupported` + `policy_restriction`；settings/CLI/environment parser call count 和数据目录 open count 均为 0。
 
 ### Q04：签名或 Bundle 不匹配
 
@@ -197,10 +204,10 @@ expected 输出必须保留 `credits` 单位，不得生成 `tokens`、`inputTok
 - synthetic request/response/error 中放入 API key、Authorization、cookie、邮箱、组织 ID、repository、文件路径、prompt、response 和三个 marker。
 - 期望：标准化输出、日志、异常、snapshot 和报告均不出现 marker 或敏感值。
 
-### Q14：权限最小化
+### Q14：组织权限结果与最小权限评审
 
-- synthetic credential 分别具有 metrics read、usage read、admin 和无权限 scope。
-- 期望：只请求产品已批准的最小 read scopes；无权限时明确失败，不建议扩大权限，不读取本地数据补偿。
+- 提供两个 synthetic API key context：创建者可访问目标 organization 资源，以及创建者无权访问目标资源；不声明 `metrics read`、`usage read` 等未公开 granular scope。
+- 期望：分别得到成功或明确的权限失败；记录 API key 与 organization 绑定、访问范围大体继承创建者这一已知边界，并将 least-privilege 可行性保留为上线前评审项。权限失败时不建议盲目扩大创建者权限，也不读取本地数据补偿。
 
 ### Q15：Fallback 隔离
 
@@ -285,6 +292,6 @@ Fixture、expected 输出及测试日志必须：
 
 ### Teams API connector
 
-未来独立 Issue 必须先确认组织管理员授权、最小 scopes、分页/限流契约、数据保留和删除策略，再实现 connector。该 connector 不能成为本地 adapter 的隐式 fallback，且 Credits 始终与 Token 分离。
+未来独立 Issue 必须先确认组织管理员授权、API key 与创建者权限继承规则、least-privilege 可行性、分页/限流契约、数据保留和删除策略，再实现 connector。不得假设官方存在 granular read scopes。该 connector 不能成为本地 adapter 的隐式 fallback，且 Credits 始终与 Token 分离。
 
 在这些门禁完成前，本契约不能被解释为接入授权。

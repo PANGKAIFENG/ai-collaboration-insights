@@ -7,11 +7,17 @@
 
 ## 1. 决策结论
 
-Qoder IDE 的安装和版本可以通过签名应用元数据检测，但本 Spike 不读取其本地数据目录，也不验证任何会话、消息、工具调用、Token、Skill 或 Subagent 字段。
+[Local Context, L1] Qoder IDE 的安装和版本可以通过签名应用元数据检测，但本 Spike 不读取其本地数据目录，也不验证任何会话、消息、工具调用、Token、Skill 或 Subagent 字段。
 
-阻塞原因是官方许可边界。Qoder Terms of Service 明确禁止 reverse engineering，以及手工或自动 scrape、mine、distil 服务中的 information、data 或 content；同时将 technical logs、使用和交互数据定义为 Usage Data，并声明相关权利归 Qoder。用户对本机的操作授权不能替代产品许可或授权公开分发第三方 adapter。
+[Evidence, L1] 阻塞原因是官方许可边界。Qoder Terms of Service 明确禁止 reverse engineering，以及手工或自动 scrape、mine、distil 服务中的 information、data 或 content；同时将 technical logs、使用和交互数据定义为 Usage Data，并声明相关权利归 Qoder。用户对本机的操作授权不能替代产品许可或授权公开分发第三方 adapter。
 
-因此当前决策为：
+[Judgment] 推荐保留 H3，排除 H1/H2：
+
+- H1“Qoder IDE 本地数据可稳定支持”：排除；政策门禁成立，且没有经过许可的数据契约验证
+- H2“Qoder IDE 可作为版本化的部分支持发布”：排除；只读和部分支持不消除许可限制
+- H3“只检测安装/版本，本地数据状态为政策不支持”：保留，作为 V1 推荐方案
+
+[Judgment] 当前发布选择为：
 
 - 产品状态：`unsupported`，reason code 为 `policy_restriction`
 - V1 行为：只检测 Qoder IDE 是否安装及其版本，不打开 Qoder 数据目录，不展示伪造的 0
@@ -21,6 +27,8 @@ Qoder IDE 的安装和版本可以通过签名应用元数据检测，但本 Spi
 - 产品隔离：QoderWork 是独立产品，不属于本 Issue 的 Qoder IDE adapter 范围
 - 发布判断置信度：高；官方条款已给出直接反证
 - 本地数据能力置信度：不适用；未打开或检查数据源
+
+[Judgment] 该推荐成立的前提是：产品面向公开分发、没有覆盖本项目使用方式的 Qoder 许可、没有获准使用的官方本地 API/导出，并且当前工程门禁优先保护用户数据和仓库发布合规性。颠覆条件是 Qoder 发布明确允许第三方分析的本地 API/可移植导出、提供书面许可，或正式法律评估确认充分依据；任一条件出现后仍需重新验证版本、路径、schema 和隐私边界。
 
 本报告不是法律意见。它是当前仓库的工程发布门禁：在解锁条件满足前，不实现或分发生产 Qoder 本地 adapter。
 
@@ -45,6 +53,8 @@ Qoder IDE 的安装和版本可以通过签名应用元数据检测，但本 Spi
 
 ### 3.1 Qoder IDE
 
+[Local Context, L1] 以下结果来自签名应用元数据与 product manifest，不是本地会话数据或公开 schema 契约：
+
 | 项目 | 已确认结果 | 用途 |
 | --- | --- | --- |
 | 应用 | `/Applications/Qoder.app` | 仅用于安装检测 |
@@ -60,18 +70,26 @@ Qoder IDE 的安装和版本可以通过签名应用元数据检测，但本 Spi
 | server data folder name | `.qoder-server` | 只记录 manifest 声明，不探测目录 |
 | product license | `Proprietary` | 发布门禁依据 |
 
-本机还确认 `~/Library/Application Support/Qoder` 与 `~/.qoder` 存在，权限分别为 `0700` 和 `0755`。这些信息不形成 schema 证据，adapter 在政策门禁下对两处目录的 open count 必须为 0。
+[Local Context, L1] 本机还确认 `~/Library/Application Support/Qoder` 与 `~/.qoder` 存在，权限分别为 `0700` 和 `0755`。这些信息不形成 schema 证据，adapter 在政策门禁下对两处目录的 open count 必须为 0。
 
-应用包内某个 `package.json` 的 `MIT` 只能视为 Code-OSS shell 或组件元数据，不能覆盖 product manifest 的 `Proprietary` 声明和 Qoder Terms。
+[Local Context, L1] 应用包内某个 `package.json` 的 `MIT` 只能视为 Code-OSS shell 或组件元数据，不能覆盖 product manifest 的 `Proprietary` 声明和 Qoder Terms。
 
 ### 3.2 QoderWork
 
-本机另有独立应用 `/Applications/QoderWork.app`：
+[Local Context, L1] 本机另有独立应用 `/Applications/QoderWork.app`：
 
 - 版本：`0.6.5`
 - Bundle ID：`com.qoder.work`
 
 QoderWork 不是 Qoder IDE 的别名、旧版本或数据源 fallback。本 Issue 不读取、探测或归并 QoderWork 数据；产品检测必须通过 Bundle ID 隔离两者。
+
+### 3.3 默认路径与自定义路径
+
+[Local Context, L1] product manifest 只声明默认目录名 `.qoder` 与 server data folder name `.qoder-server`。这些名称只证明应用构建包含默认目录元数据，不证明目录内格式稳定，也不证明存在可供第三方使用的发现机制。
+
+[Evidence, L1] 在本 Spike 已检查的官方材料范围内，未发现或验证 Qoder 对自定义数据路径、路径优先级、迁移行为或第三方路径发现方式的公开契约。
+
+[Judgment] 政策门禁下，安装检测不得为发现路径而解析 CLI 参数、环境变量、settings、进程参数或数据目录内容。因此 V1 不支持自定义路径；即使默认目录存在也保持 open count 为 0。只有许可门禁解除后，才能另行验证官方支持的配置来源、路径优先级、canonical path、symlink 和权限规则。
 
 ## 4. 本地能力矩阵
 
@@ -119,22 +137,23 @@ QoderWork 不是 Qoder IDE 的别名、旧版本或数据源 fallback。本 Issu
 
 ## 7. Qoder Teams OpenAPI 替代路径
 
-Qoder Teams 提供官方 OpenAPI 和 Analytics 能力，可作为未来独立 connector 的调研入口：
+[Evidence, L1] Qoder Teams 提供官方 OpenAPI 和 Analytics 能力，可作为未来独立 connector 的调研入口：
 
 - AI Code Metrics：AI code stats、daily trends、member ranking
 - change/commit 数据：repository、file extension、commit attribution 与 CSV export
 - usage 数据：conversation ID，以及 Agent、NEXT、QUEST、INLINECHAT 等来源
 - Credits usage events：事件时间、operation、source 与 model tier
 
-它有明确边界：
+[Evidence, L1] 当前官方材料确认的边界包括：
 
 - 需要 Teams/Enterprise API key，面向组织管理员或集成负责人
+- API key 与 organization 绑定，可访问范围大体继承创建者；未确认可由本项目声明的 granular read scopes
 - Credits 不是 Token
 - 不提供完整会话内容
 - 没有可信的 Skill 或 Subagent 使用证据
 - 不适合作为 V1 单用户本地 adapter 的 fallback
 
-未来若立项，应使用独立 source ID `qoder-teams-api`、独立授权流程、独立数据模型和独立 Issue。不得在 Qoder IDE 卡片检测到本地安装后自动请求 Teams API，也不得将 Teams 组织数据伪装成本地个人数据。
+[Judgment] 未来若立项，应使用独立 source ID `qoder-teams-api`、独立授权流程、独立数据模型和独立 Issue。不得在 Qoder IDE 卡片检测到本地安装后自动请求 Teams API，也不得将 Teams 组织数据伪装成本地个人数据。
 
 ## 8. 隐私与安全约束
 
