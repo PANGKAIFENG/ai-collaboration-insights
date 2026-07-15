@@ -1,6 +1,7 @@
 import type {
   Evidence,
   ReportWindow,
+  TaskEvidencePacket,
   TaskRelation,
   TaskSummary,
   UnifiedEvent,
@@ -11,6 +12,8 @@ import type {
 import { scoreCollaboration } from "./scoring.ts";
 import { buildSessionFacts } from "./facts.ts";
 import { reconstructTaskBoundaries } from "./tasks.ts";
+import { buildTaskEvidencePacket } from "./evidence.ts";
+import { segmentSemanticRounds, selectKeyRounds } from "./rounds.ts";
 
 const ACTIVE_SEGMENT_MS = 5 * 60 * 1000;
 const MERGE_GAP_MS = 20 * 60 * 1000;
@@ -36,6 +39,7 @@ export interface DeterministicAnalysis {
   workBlocks: WorkBlock[];
   tasks: TaskSummary[];
   taskRelations: TaskRelation[];
+  evidencePackets: TaskEvidencePacket[];
   evidence: Evidence[];
   score: ReturnType<typeof scoreCollaboration>;
 }
@@ -203,6 +207,9 @@ function blockProjection(
       evidenceIds: taskEvidence.map((item) => item.id),
       sourceSessionIds: [...new Set(block.events.map((event) => event.sourceSessionId))].sort(),
       relationIds: [],
+      semanticRoundCount: 0,
+      effectiveRoundCount: 0,
+      keyRounds: [],
       hasIteration,
       hasVerification,
       hasReusableAsset,
@@ -220,6 +227,7 @@ export function analyzeDeterministically(
     blockProjection(block, index + 1, Date.parse(window.end))
   );
   const taskGraph = reconstructTaskBoundaries(events, window);
+  const evidencePackets: TaskEvidencePacket[] = [];
   const taskProjections = taskGraph.tasks.map((boundary, index) => {
     const projection = blockProjection(
       {
@@ -230,6 +238,24 @@ export function analyzeDeterministically(
       index + 1,
       Date.parse(window.end),
     );
+    const rounds = segmentSemanticRounds(boundary.id, boundary.events);
+    const effectiveRounds = rounds.filter((round) => round.status === "effective");
+    projection.evidence = projection.evidence.filter((item) => item.type !== "iteration");
+    if (effectiveRounds.length > 0) {
+      const effectiveEventIds = new Set(effectiveRounds.flatMap((round) => [
+        ...round.feedbackEventIds,
+        ...round.adjustmentEventIds,
+        ...round.attemptEventIds,
+      ]));
+      projection.evidence.push(evidence(
+        `task-${index + 1}-iteration`,
+        "iteration",
+        "观察到新反馈后的有效调整",
+        boundary.events.filter((event) => effectiveEventIds.has(event.eventId)).slice(0, 8),
+        0.82,
+      ));
+    }
+    evidencePackets.push(buildTaskEvidencePacket(boundary, rounds));
     projection.task = {
       ...projection.task,
       id: boundary.id,
@@ -241,6 +267,10 @@ export function analyzeDeterministically(
       confidence: boundary.confidence,
       sourceSessionIds: boundary.sourceSessionIds,
       relationIds: boundary.relationIds,
+      semanticRoundCount: rounds.length,
+      effectiveRoundCount: effectiveRounds.length,
+      keyRounds: selectKeyRounds(rounds, 5),
+      hasIteration: effectiveRounds.length > 0,
     };
     return projection;
   });
@@ -264,6 +294,7 @@ export function analyzeDeterministically(
     workBlocks,
     tasks,
     taskRelations: taskGraph.relations,
+    evidencePackets,
     evidence: allEvidence,
     score: scoreCollaboration(tasks, allEvidence),
   };

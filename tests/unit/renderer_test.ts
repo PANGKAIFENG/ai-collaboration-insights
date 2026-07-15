@@ -55,11 +55,15 @@ function syntheticReport(): DailyReport {
       evidenceIds: ["evidence-1"],
       sourceSessionIds: ["session-1"],
       relationIds: [],
+      semanticRoundCount: 1,
+      effectiveRoundCount: 0,
+      keyRounds: [],
       hasIteration: true,
       hasVerification: false,
       hasReusableAsset: false,
     }],
     taskRelations: [],
+    evidencePackets: [],
     score: {
       total: 70,
       dimensions: [{
