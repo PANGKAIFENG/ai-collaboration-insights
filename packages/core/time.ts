@@ -96,3 +96,19 @@ export function localReportDate(now: Date, timeZone: string): string {
 export function previousReportDate(date: string): string {
   return shiftDate(date, -1);
 }
+
+export function missingClosedReportDates(
+  now: Date,
+  timeZone: string,
+  generatedDates: ReadonlySet<string>,
+  limit = 7,
+): string[] {
+  if (!Number.isInteger(limit) || limit < 1) throw new Error("limit must be a positive integer");
+  const latest = localReportDate(now, timeZone);
+  const dates: string[] = [];
+  for (let offset = limit - 1; offset >= 0; offset--) {
+    const date = shiftDate(latest, -offset);
+    if (!generatedDates.has(date)) dates.push(date);
+  }
+  return dates;
+}

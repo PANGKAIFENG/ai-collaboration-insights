@@ -9,7 +9,7 @@ import {
   readJson,
   sha256,
 } from "../core/io.ts";
-import { reportDateWindow } from "../core/time.ts";
+import { localReportDate, missingClosedReportDates, reportDateWindow } from "../core/time.ts";
 import {
   APP_VERSION,
   type CoachSuggestion,
@@ -20,6 +20,7 @@ import {
 import { indexEntries, renderDailyReport, renderReportIndex } from "./renderer.ts";
 import { validateDailyReport } from "./schema.ts";
 import { readConsent } from "../runtime/commands.ts";
+import { ensureOwnedDataDirectory } from "../runtime/scheduler.ts";
 
 export interface GenerateReportOptions {
   date: string;
@@ -37,6 +38,16 @@ export interface GenerateReportResult {
   status: "generated" | "up_to_date";
   report: DailyReport;
   htmlPath: string;
+}
+
+export interface GenerateScheduledReportsOptions {
+  now?: Date;
+  timeZone: string;
+  sourceRoot: string;
+  dataDir: string;
+  noAi: boolean;
+  catchUpLimit?: number;
+  analyzerRunner?: AnalyzerRunner;
 }
 
 function emptyManifest(): Manifest {
@@ -133,6 +144,7 @@ export async function generateDailyReport(
   options: GenerateReportOptions,
 ): Promise<GenerateReportResult> {
   if (!options.dataDir.startsWith("/")) throw new Error("dataDir must be absolute");
+  await ensureOwnedDataDirectory(options.dataDir);
   const reportsDir = `${options.dataDir}/reports`;
   await Deno.mkdir(reportsDir, { recursive: true, mode: 0o700 });
   await Deno.mkdir(`${options.dataDir}/tmp`, { recursive: true, mode: 0o700 });
@@ -261,4 +273,35 @@ export async function generateDailyReport(
   } finally {
     await release();
   }
+}
+
+export async function generateScheduledReports(
+  options: GenerateScheduledReportsOptions,
+): Promise<GenerateReportResult[]> {
+  const now = options.now ?? new Date();
+  const manifest = await readJson<Manifest>(`${options.dataDir}/manifest.json`, emptyManifest());
+  const latest = localReportDate(now, options.timeZone);
+  const missing = missingClosedReportDates(
+    now,
+    options.timeZone,
+    new Set(Object.keys(manifest.reports)),
+    options.catchUpLimit ?? 7,
+  );
+  const dates = missing.includes(latest) ? missing : [...missing, latest];
+  const results: GenerateReportResult[] = [];
+  for (const date of dates) {
+    results.push(
+      await generateDailyReport({
+        date,
+        timeZone: options.timeZone,
+        sourceRoot: options.sourceRoot,
+        dataDir: options.dataDir,
+        noAi: options.noAi,
+        generationReason: date === latest ? "scheduled" : "catch_up",
+        now,
+        analyzerRunner: options.analyzerRunner,
+      }),
+    );
+  }
+  return results;
 }

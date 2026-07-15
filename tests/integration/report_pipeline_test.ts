@@ -1,5 +1,5 @@
 import { assert, assertEquals, assertRejects } from "../_assert.ts";
-import { generateDailyReport } from "../../packages/report/pipeline.ts";
+import { generateDailyReport, generateScheduledReports } from "../../packages/report/pipeline.ts";
 import { grantConsent } from "../../packages/runtime/commands.ts";
 
 const sourceFixture = new URL("../fixtures/codex/window-basic.jsonl", import.meta.url).pathname;
@@ -26,6 +26,10 @@ Deno.test("publishes idempotent revisions and preserves current report on failur
     assert(await exists(`${dataDir}/reports/2026-07-15/report.json`));
     assert(await exists(`${dataDir}/reports/2026-07-15/index.html`));
     assert(await exists(`${dataDir}/reports/index.html`));
+    assertEquals(
+      JSON.parse(await Deno.readTextFile(`${dataDir}/.aci-owned.json`)),
+      { schemaVersion: "1", app: "ai-collaboration-insights" },
+    );
 
     const second = await generateDailyReport(options);
     assertEquals(second.status, "up_to_date");
@@ -50,6 +54,76 @@ Deno.test("publishes idempotent revisions and preserves current report on failur
       await Deno.readTextFile(`${dataDir}/reports/2026-07-15/report.json`),
       beforeFailure,
     );
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("refuses to publish into an existing unowned data directory", async () => {
+  const root = await Deno.makeTempDir();
+  const sourceRoot = `${root}/source`;
+  const dataDir = `${root}/data`;
+  await Deno.mkdir(sourceRoot);
+  await Deno.mkdir(dataDir);
+  await Deno.writeTextFile(`${dataDir}/user-file.txt`, "keep");
+  await Deno.copyFile(sourceFixture, `${sourceRoot}/session.jsonl`);
+  try {
+    await assertRejects(
+      () =>
+        generateDailyReport({
+          date: "2026-07-15",
+          timeZone: "Asia/Shanghai",
+          sourceRoot,
+          dataDir,
+          noAi: true,
+          generationReason: "manual",
+        }),
+      /owned/,
+    );
+    assertEquals(await Deno.readTextFile(`${dataDir}/user-file.txt`), "keep");
+    assertEquals((await Array.fromAsync(Deno.readDir(dataDir))).length, 1);
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("scheduled runs catch up missing windows and recheck the latest closed window", async () => {
+  const root = await Deno.makeTempDir();
+  const sourceRoot = `${root}/source`;
+  const dataDir = `${root}/data`;
+  await Deno.mkdir(sourceRoot);
+  await Deno.copyFile(sourceFixture, `${sourceRoot}/session.jsonl`);
+  try {
+    const first = await generateScheduledReports({
+      now: new Date("2026-07-15T11:05:00.000Z"),
+      timeZone: "Asia/Shanghai",
+      sourceRoot,
+      dataDir,
+      noAi: true,
+      catchUpLimit: 3,
+    });
+    assertEquals(first.map((result) => result.report.window.date), [
+      "2026-07-13",
+      "2026-07-14",
+      "2026-07-15",
+    ]);
+    assertEquals(first.map((result) => result.report.generationReason), [
+      "catch_up",
+      "catch_up",
+      "scheduled",
+    ]);
+
+    const second = await generateScheduledReports({
+      now: new Date("2026-07-15T11:06:00.000Z"),
+      timeZone: "Asia/Shanghai",
+      sourceRoot,
+      dataDir,
+      noAi: true,
+      catchUpLimit: 3,
+    });
+    assertEquals(second.length, 1);
+    assertEquals(second[0].status, "up_to_date");
+    assertEquals(second[0].report.window.date, "2026-07-15");
   } finally {
     await Deno.remove(root, { recursive: true });
   }

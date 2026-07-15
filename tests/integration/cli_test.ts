@@ -2,7 +2,7 @@ import { assert, assertEquals } from "../_assert.ts";
 
 const decoder = new TextDecoder();
 
-async function runCli(args: string[]) {
+async function runCli(args: string[], env?: Record<string, string>) {
   const command = new Deno.Command(Deno.execPath(), {
     args: [
       "run",
@@ -14,6 +14,7 @@ async function runCli(args: string[]) {
       ...args,
     ],
     cwd: new URL("../..", import.meta.url),
+    env,
     stdout: "piped",
     stderr: "piped",
   });
@@ -30,6 +31,58 @@ Deno.test("version prints the semantic version", async () => {
   assertEquals(result.code, 0);
   assertEquals(result.stdout, "0.1.0");
   assertEquals(result.stderr, "");
+});
+
+Deno.test("doctor reports local readiness without exposing paths", async () => {
+  const root = await Deno.makeTempDir();
+  const home = `${root}/home`;
+  await Deno.mkdir(`${home}/.codex/sessions`, { recursive: true });
+  try {
+    const result = await runCli(["doctor"], { HOME: home, CODEX_HOME: `${home}/.codex` });
+    assertEquals(result.code, 0);
+    const status = JSON.parse(result.stdout);
+    assertEquals(status.version, "0.1.0");
+    assertEquals(status.codexSessions, "ready");
+    assert(!result.stdout.includes(home));
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("schedule status and data purge use the current user application paths", async () => {
+  const root = await Deno.makeTempDir();
+  const home = `${root}/home`;
+  const dataDir = `${home}/Library/Application Support/ai-collaboration-insights`;
+  await Deno.mkdir(`${home}/.codex/sessions`, { recursive: true });
+  await Deno.mkdir(dataDir, { recursive: true });
+  await Deno.writeTextFile(
+    `${dataDir}/.aci-owned.json`,
+    '{"schemaVersion":"1","app":"ai-collaboration-insights"}\n',
+  );
+  try {
+    const status = await runCli(["schedule", "status"], {
+      HOME: home,
+      CODEX_HOME: `${home}/.codex`,
+    });
+    assertEquals(status.code, 0);
+    assertEquals(JSON.parse(status.stdout).status, "not_installed");
+
+    const purge = await runCli(["data", "purge"], {
+      HOME: home,
+      CODEX_HOME: `${home}/.codex`,
+    });
+    assertEquals(purge.code, 0);
+    assertEquals(JSON.parse(purge.stdout).status, "purged");
+    let removed = false;
+    try {
+      await Deno.stat(dataDir);
+    } catch (error) {
+      removed = error instanceof Deno.errors.NotFound;
+    }
+    assert(removed);
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
 });
 
 Deno.test("unknown command returns a stable usage error", async () => {

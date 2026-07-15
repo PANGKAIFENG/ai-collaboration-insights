@@ -1,4 +1,5 @@
 import { atomicWriteJson, readJson } from "../core/io.ts";
+import { ensureOwnedDataDirectory } from "./scheduler.ts";
 
 export interface ConsentState {
   schemaVersion: "1";
@@ -29,7 +30,7 @@ export async function grantConsent(path: string, now = new Date()): Promise<Cons
     scope: "daily_standard",
   };
   const parent = path.slice(0, path.lastIndexOf("/"));
-  await Deno.mkdir(parent, { recursive: true, mode: 0o700 });
+  await ensureOwnedDataDirectory(parent);
   await atomicWriteJson(path, state);
   return state;
 }
@@ -42,7 +43,7 @@ export async function revokeConsent(path: string, now = new Date()): Promise<Con
     revokedAt: now.toISOString(),
   };
   const parent = path.slice(0, path.lastIndexOf("/"));
-  await Deno.mkdir(parent, { recursive: true, mode: 0o700 });
+  await ensureOwnedDataDirectory(parent);
   await atomicWriteJson(path, state);
   return state;
 }
