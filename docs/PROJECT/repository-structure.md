@@ -2,7 +2,10 @@
 
 ## Current Snapshot
 
-The project is in technical validation. Product requirements, review evidence, editable diagrams, and the published issue backlog exist. Production code has not started.
+`v0.1.0` is released as a Codex-only daily-report public alpha. Production code,
+automated tests, release automation, install/uninstall scripts, and verification
+evidence are present. The repository is now validating the installed product
+with real Codex usage while keeping personal logs and reports outside Git.
 
 ## Stable Top-Level Map
 
@@ -21,7 +24,11 @@ ai-collaboration-insights/
 └── README.md
 ```
 
-The exact directories under `apps/` and `packages/` are intentionally deferred to architecture Issue #6. Do not create framework-specific package boundaries before that ADR is approved.
+The current `apps/` and `packages/` boundaries follow accepted
+[ADR-0001](../DECISIONS/ADR-0001-codex-daily-report-runtime.md). Do not add a
+framework, persistent service, database, or new source adapter without a scoped
+Issue and an accepted decision that explains why the public-alpha evidence
+requires it.
 
 ## Placement Rules
 

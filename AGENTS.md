@@ -2,7 +2,27 @@
 
 ## Current Stage
 
-The PRD and V1 phase roadmap are approved. This repository is in technical validation. Do not add production code for an issue until its relevant spikes and architecture decisions are complete and its issue-level implementation plan is approved.
+`v0.1.0` is released as a public alpha. The current objective is to validate the
+existing Codex-only daily report with real usage, fix alpha blockers, and record
+non-blocking defects without expanding the MVP.
+
+For seven active Codex days, the validation target is at least six reports that
+generate without manual repair, a review sample of at least 20 real tasks with
+80% task/project agreement, one-minute comprehension of the day's main work,
+and at least one coaching suggestion that the user can act on and test.
+
+The active MVP is a one-shot CLI that reads Codex logs, generates a daily static
+HTML report, and schedules it with `launchd`. Claude Code, additional sources,
+weekly/monthly reports, a daemon, localhost API, dynamic Dashboard, SQLite, and
+calendar integrations are post-MVP. Do not add them without a new product
+decision and a scoped GitHub Issue.
+
+When scope descriptions conflict, use this precedence:
+
+1. `docs/PRD/codex-daily-report-mvp-scope-v0.1.md`
+2. `docs/DECISIONS/ADR-0001-codex-daily-report-runtime.md`
+3. `README.md` and `docs/RELEASES/v0.1.0.md`
+4. The broader V1 PRD and pre-compression Issue descriptions
 
 ## Privacy
 
@@ -36,6 +56,7 @@ Do not create a new top-level documentation or code directory when an existing l
 ## Delivery Rules
 
 - Work from a GitHub issue.
+- Confirm the issue is inside the active MVP or explicitly approved as post-MVP before implementation.
 - Use branches named feature/<issue>-<slug>, fix/<issue>-<slug>, docs/<issue>-<slug>, or spike/<issue>-<slug>.
 - Keep pull requests scoped to one vertical slice.
 - Add verification evidence to every pull request.
