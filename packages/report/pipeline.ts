@@ -1,4 +1,6 @@
 import { analyzeDeterministically } from "../analysis/deterministic.ts";
+import { type AnalyzerRunner, runCodexAnalysis } from "../analysis/codex_analyzer.ts";
+import { buildAnalysisPackage } from "../analysis/redaction.ts";
 import { scanCodexWindow } from "../codex/adapter.ts";
 import {
   acquireReportLock,
@@ -17,6 +19,7 @@ import {
 } from "../core/types.ts";
 import { indexEntries, renderDailyReport, renderReportIndex } from "./renderer.ts";
 import { validateDailyReport } from "./schema.ts";
+import { readConsent } from "../runtime/commands.ts";
 
 export interface GenerateReportOptions {
   date: string;
@@ -27,6 +30,7 @@ export interface GenerateReportOptions {
   generationReason: DailyReport["generationReason"];
   now?: Date;
   beforePublish?: () => Promise<void>;
+  analyzerRunner?: AnalyzerRunner;
 }
 
 export interface GenerateReportResult {
@@ -140,12 +144,22 @@ export async function generateDailyReport(
     const manifest = await readJson<Manifest>(manifestFile, emptyManifest());
     const current = manifest.reports[options.date];
     const reportFile = `${reportsDir}/${options.date}/report.json`;
+    const consent = await readConsent(`${options.dataDir}/consent.json`);
     if (current?.sourceFingerprint === scan.fingerprint && await pathExists(reportFile)) {
-      return {
-        status: "up_to_date",
-        report: validateDailyReport(JSON.parse(await Deno.readTextFile(reportFile))),
-        htmlPath: `${reportsDir}/${options.date}/index.html`,
-      };
+      const existing = validateDailyReport(JSON.parse(await Deno.readTextFile(reportFile)));
+      const analysisIsCurrent = options.noAi
+        ? existing.analysisStatus.status === "disabled"
+        : consent.granted
+        ? existing.analysisStatus.mode === "ai_enriched" &&
+          existing.analysisStatus.status === "complete"
+        : existing.analysisStatus.status === "not_consented";
+      if (analysisIsCurrent) {
+        return {
+          status: "up_to_date",
+          report: existing,
+          htmlPath: `${reportsDir}/${options.date}/index.html`,
+        };
+      }
     }
 
     const deterministic = analyzeDeterministically(scan.events, window);
@@ -188,6 +202,45 @@ export async function generateDailyReport(
       },
     };
     report.coachSuggestions = suggestions(report);
+    if (!options.noAi) {
+      const analysis = await runCodexAnalysis({
+        input: buildAnalysisPackage(report, scan.events),
+        consent,
+        runner: options.analyzerRunner,
+      });
+      if (analysis.status === "complete" && analysis.enrichment) {
+        const enrichmentById = new Map(analysis.enrichment.tasks.map((item) => [item.id, item]));
+        report.tasks = report.tasks.map((task) => {
+          const enrichment = enrichmentById.get(task.id);
+          if (!enrichment) return task;
+          return {
+            ...task,
+            name: enrichment.name,
+            outcome: enrichment.outcome,
+            verification: task.hasVerification
+              ? "verified"
+              : enrichment.verificationStatus === "not_observed"
+              ? "not_observed"
+              : "attempted",
+            confidence: Math.max(task.confidence, enrichment.confidence),
+          };
+        });
+        report.coachSuggestions = analysis.enrichment.suggestions;
+        report.analysisStatus = { mode: "ai_enriched", status: "complete" };
+      } else if (analysis.status === "degraded") {
+        report.analysisStatus = {
+          mode: "deterministic",
+          status: "degraded",
+          reason: analysis.reason ?? "Codex analysis failed",
+        };
+      } else {
+        report.analysisStatus = {
+          mode: "deterministic",
+          status: "not_consented",
+          reason: analysis.reason,
+        };
+      }
+    }
     validateDailyReport(report);
     const html = renderDailyReport(report);
     await publishDateDirectory(reportsDir, options.date, report, html, options.beforePublish);

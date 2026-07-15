@@ -2,6 +2,12 @@ import { appPaths, codexSessionsRoot } from "../../packages/core/paths.ts";
 import { localReportDate } from "../../packages/core/time.ts";
 import { APP_VERSION } from "../../packages/core/types.ts";
 import { generateDailyReport } from "../../packages/report/pipeline.ts";
+import {
+  CONSENT_DISCLOSURE,
+  grantConsent,
+  readConsent,
+  revokeConsent,
+} from "../../packages/runtime/commands.ts";
 
 export interface CliResult {
   code: number;
@@ -20,6 +26,23 @@ function option(args: string[], name: string): string | undefined {
 export async function runCli(args: string[]): Promise<CliResult> {
   const [command] = args;
   if (command === "version") return { code: 0, stdout: APP_VERSION };
+  if (command === "consent") {
+    const paths = appPaths();
+    const dataDir = option(args, "--data-dir") ?? paths.dataDir;
+    const consentFile = `${dataDir}/consent.json`;
+    const action = args[1];
+    if (action === "grant") {
+      const state = await grantConsent(consentFile);
+      return { code: 0, stdout: JSON.stringify({ disclosure: CONSENT_DISCLOSURE, ...state }) };
+    }
+    if (action === "revoke") {
+      return { code: 0, stdout: JSON.stringify(await revokeConsent(consentFile)) };
+    }
+    if (action === "status") {
+      return { code: 0, stdout: JSON.stringify(await readConsent(consentFile)) };
+    }
+    return { code: 2, stderr: "ACI_USAGE: expected consent grant, revoke, or status" };
+  }
   if (command === "report") {
     try {
       const defaults = appPaths();
