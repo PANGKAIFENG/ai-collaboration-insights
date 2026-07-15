@@ -36,6 +36,7 @@ function statusLabel(report: DailyReport): string {
 function analysisLabel(report: DailyReport): string {
   const labels: Record<DailyReport["analysisStatus"]["status"], string> = {
     complete: report.analysisStatus.mode === "ai_enriched" ? "AI 分析完成" : "确定性分析完成",
+    partial: "AI 分析部分完成",
     disabled: "AI 分析已关闭",
     not_consented: "AI 分析未授权",
     degraded: "AI 分析已降级",

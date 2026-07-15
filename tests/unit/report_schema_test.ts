@@ -41,6 +41,7 @@ function report(): DailyReport {
     score: { total: null, dimensions: [] },
     maturity: { level: "unavailable", reason: "No task evidence" },
     evidence: [],
+    sessionInsights: [],
     coachSuggestions: [],
     analysisStatus: { mode: "deterministic", status: "disabled" },
     provenance: {
@@ -68,4 +69,11 @@ Deno.test("rejects more than three coach suggestions", async () => {
     verification: "Verify",
   }));
   await assertRejects(() => Promise.resolve(validateDailyReport(value)), /at most 3/);
+});
+
+Deno.test("migrates a v1 report without session insights", () => {
+  const value = report() as unknown as Record<string, unknown>;
+  delete value.sessionInsights;
+  const migrated = validateDailyReport(value);
+  assertEquals(migrated.sessionInsights, []);
 });

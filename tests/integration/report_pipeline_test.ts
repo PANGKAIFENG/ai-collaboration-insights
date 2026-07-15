@@ -155,7 +155,11 @@ Deno.test("enriches a deterministic report only after consent", async () => {
               outcome: "Window parser and tests were added",
               verificationStatus: "attempted",
               confidence: 0.9,
+              evidenceIds: ["task-1-intent"],
+              needsDetail: false,
+              conflict: false,
             }],
+            insights: [],
             suggestions: [{
               issue: "Verification result is not explicit",
               evidenceId: "task-1-intent",
@@ -167,6 +171,7 @@ Deno.test("enriches a deterministic report only after consent", async () => {
     });
     assertEquals(result.report.analysisStatus.mode, "ai_enriched");
     assertEquals(result.report.analysisStatus.status, "complete");
+    assertEquals(result.report.analysisStatus.coverage?.analyzedTasks, 1);
     assertEquals(result.report.tasks[0].name, "Deliver daily window coverage");
     assertEquals(result.report.coachSuggestions.length, 1);
   } finally {

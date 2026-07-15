@@ -1,6 +1,6 @@
 import { analyzeDeterministically } from "../analysis/deterministic.ts";
 import { type AnalyzerRunner, runCodexAnalysis } from "../analysis/codex_analyzer.ts";
-import { buildAnalysisPackage } from "../analysis/redaction.ts";
+import { buildAnalysisDetails, buildAnalysisPackage } from "../analysis/redaction.ts";
 import { scanCodexWindow } from "../codex/adapter.ts";
 import {
   acquireReportLock,
@@ -202,6 +202,7 @@ export async function generateDailyReport(
       score: { total: deterministic.score.total, dimensions: deterministic.score.dimensions },
       maturity: deterministic.score.maturity,
       evidence: deterministic.evidence,
+      sessionInsights: [],
       coachSuggestions: [],
       analysisStatus: {
         mode: "deterministic",
@@ -210,7 +211,7 @@ export async function generateDailyReport(
       provenance: {
         appVersion: APP_VERSION,
         parserVersion: "1",
-        analyzerVersion: "1",
+        analyzerVersion: "2",
         rubricVersion: "1",
         rendererVersion: "1",
         sourceFingerprint: scan.fingerprint,
@@ -219,11 +220,15 @@ export async function generateDailyReport(
     report.coachSuggestions = suggestions(report);
     if (!options.noAi) {
       const analysis = await runCodexAnalysis({
-        input: buildAnalysisPackage(report, scan.events),
+        input: buildAnalysisPackage(report),
+        detailProvider: (taskIds) => buildAnalysisDetails(report, scan.events, taskIds),
         consent,
         runner: options.analyzerRunner,
       });
-      if (analysis.status === "complete" && analysis.enrichment) {
+      if (
+        (analysis.status === "complete" || analysis.status === "partial") &&
+        analysis.enrichment
+      ) {
         const enrichmentById = new Map(analysis.enrichment.tasks.map((item) => [item.id, item]));
         report.tasks = report.tasks.map((task) => {
           const enrichment = enrichmentById.get(task.id);
@@ -240,8 +245,16 @@ export async function generateDailyReport(
             confidence: Math.max(task.confidence, enrichment.confidence),
           };
         });
-        report.coachSuggestions = analysis.enrichment.suggestions;
-        report.analysisStatus = { mode: "ai_enriched", status: "complete" };
+        report.sessionInsights = analysis.enrichment.insights;
+        if (analysis.enrichment.suggestions.length > 0) {
+          report.coachSuggestions = analysis.enrichment.suggestions;
+        }
+        report.analysisStatus = {
+          mode: "ai_enriched",
+          status: analysis.status,
+          reason: analysis.reason,
+          coverage: analysis.coverage,
+        };
       } else if (analysis.status === "degraded") {
         report.analysisStatus = {
           mode: "deterministic",
