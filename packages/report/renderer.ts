@@ -71,7 +71,9 @@ export function renderDailyReport(report: DailyReport): string {
           <p>${escapeHtml(task.outcome)}</p>
           <div class="task-meta"><span>${escapeHtml(task.projectLabel ?? "未知项目")}</span><span>${
       number(task.activeMinutes)
-    } 分钟</span><span>${task.verification === "verified" ? "已验证" : "未观察到验证"}</span></div>
+    } 分钟</span><span>${
+      task.verification === "verified" ? "已验证" : "未观察到验证"
+    }</span><span>${task.sourceSessionIds.length} 个会话 · ${task.relationIds.length} 条关系</span></div>
           <div class="evidence-line">证据 ${
       escapeHtml(task.evidenceIds.join(" · ") || "不足")
     }</div>

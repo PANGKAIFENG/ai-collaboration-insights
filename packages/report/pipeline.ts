@@ -197,6 +197,7 @@ export async function generateDailyReport(
       usageDistributions: deterministic.usageDistributions,
       workBlocks: deterministic.workBlocks,
       tasks: deterministic.tasks,
+      taskRelations: deterministic.taskRelations,
       score: { total: deterministic.score.total, dimensions: deterministic.score.dimensions },
       maturity: deterministic.score.maturity,
       evidence: deterministic.evidence,

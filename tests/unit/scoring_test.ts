@@ -13,6 +13,8 @@ function task(index: number, options: Partial<TaskSummary> = {}): TaskSummary {
     verification: "verified",
     confidence: 0.8,
     evidenceIds: [`intent-${index}`, `iteration-${index}`, `verification-${index}`],
+    sourceSessionIds: [`session-${index}`],
+    relationIds: [],
     hasIteration: true,
     hasVerification: true,
     hasReusableAsset: false,
