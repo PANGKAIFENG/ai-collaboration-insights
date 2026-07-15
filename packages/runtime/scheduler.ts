@@ -173,6 +173,15 @@ export async function ensureOwnedDataDirectory(dataDir: string): Promise<void> {
     await writeOwnershipMarker(dataDir);
     return;
   }
+  let isEmpty = true;
+  for await (const _entry of Deno.readDir(dataDir)) {
+    isEmpty = false;
+    break;
+  }
+  if (isEmpty) {
+    await writeOwnershipMarker(dataDir);
+    return;
+  }
   try {
     const ownership = JSON.parse(await Deno.readTextFile(`${dataDir}/${OWNERSHIP_FILE}`));
     if (ownership?.schemaVersion === "1" && ownership?.app === "ai-collaboration-insights") {

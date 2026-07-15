@@ -1,6 +1,6 @@
 # Contributing
 
-AI Collaboration Insights is currently in product definition and technical validation.
+AI Collaboration Insights `v0.1.0` 当前处于 Codex-only 日报公开 alpha 阶段。
 
 ## Before Starting
 
@@ -24,6 +24,24 @@ The main branch is release-ready. Changes reach main through pull requests.
 - Include tests or verification evidence.
 - Describe privacy impact and data handling changes.
 - Keep unrelated refactors out of the pull request.
+
+## Local Verification
+
+提交 PR 前至少运行：
+
+```sh
+deno task verify
+python3 -m unittest tests/eval/test_scoring_baseline.py -v
+python3 scripts/eval_scoring_baseline.py \
+  --rubric tests/eval/scoring-baseline/rubric.v1.json \
+  --cases tests/eval/scoring-baseline/cases.v1.jsonl \
+  --predictions tests/eval/scoring-baseline/predictions.conformance.jsonl
+sh scripts/privacy_check.sh
+sh -n scripts/install.sh scripts/uninstall.sh
+git diff --check
+```
+
+CI 固定使用 Deno `2.7.1`，任何失败或跳过都不能作为通过证据。
 
 ## Test Data
 

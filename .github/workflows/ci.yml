@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.7.1
+      - name: Format
+        run: deno fmt --check
+      - name: Lint
+        run: deno lint
+      - name: Type check
+        run: deno task check
+      - name: Tests
+        run: deno task test
+      - name: Scoring unit evaluation
+        run: python3 -m unittest tests/eval/test_scoring_baseline.py -v
+      - name: Scoring conformance gate
+        run: >-
+          python3 scripts/eval_scoring_baseline.py
+          --rubric tests/eval/scoring-baseline/rubric.v1.json
+          --cases tests/eval/scoring-baseline/cases.v1.jsonl
+          --predictions tests/eval/scoring-baseline/predictions.conformance.jsonl
+      - name: Privacy gate
+        run: sh scripts/privacy_check.sh
+
+  macos-binaries:
+    runs-on: macos-14
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [aarch64-apple-darwin, x86_64-apple-darwin]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.7.1
+      - name: Compile
+        run: >-
+          deno compile
+          --target ${{ matrix.target }}
+          --allow-read
+          --allow-write
+          --allow-env
+          --allow-run=codex,/usr/bin/open,/bin/launchctl,/usr/bin/id
+          --output dist/aci-${{ matrix.target }}
+          apps/cli/main.ts
+      - name: Native smoke test
+        if: matrix.target == 'aarch64-apple-darwin'
+        run: test "$(dist/aci-${{ matrix.target }} version)" = "0.1.0"
+      - name: Checksum
+        run: shasum -a 256 dist/aci-${{ matrix.target }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: aci-${{ matrix.target }}
+          path: dist/aci-${{ matrix.target }}
+          if-no-files-found: error
