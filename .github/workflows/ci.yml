@@ -34,6 +34,8 @@ jobs:
           --predictions tests/eval/scoring-baseline/predictions.conformance.jsonl
       - name: Privacy gate
         run: sh scripts/privacy_check.sh
+      - name: Shell syntax
+        run: sh -n scripts/install.sh scripts/uninstall.sh scripts/privacy_check.sh
 
   macos-binaries:
     runs-on: macos-14
@@ -57,7 +59,9 @@ jobs:
           --output dist/aci-${{ matrix.target }}
           apps/cli/main.ts
       - name: Native smoke test
-        if: matrix.target == 'aarch64-apple-darwin'
+        if: >-
+          (matrix.target == 'aarch64-apple-darwin' && runner.arch == 'ARM64') ||
+          (matrix.target == 'x86_64-apple-darwin' && runner.arch == 'X64')
         run: test "$(dist/aci-${{ matrix.target }} version)" = "0.1.0"
       - name: Checksum
         run: shasum -a 256 dist/aci-${{ matrix.target }}

@@ -93,9 +93,11 @@ Deno.test("renders data then outcomes then coaching with a strict static CSP", (
   const coaching = html.indexOf("教练建议");
   assert(data > 0 && data < outcomes && outcomes < coaching);
   assert(html.includes("default-src 'none'"));
+  assert(!html.includes("frame-ancestors"));
   assert(!/<script\b/i.test(html));
   assert(!/<form\b/i.test(html));
   assert(!/https?:\/\//i.test(html));
+  assert(/footer\{[^}]*overflow-wrap:anywhere/.test(html));
 });
 
 Deno.test("escapes every model and log derived string as text", () => {

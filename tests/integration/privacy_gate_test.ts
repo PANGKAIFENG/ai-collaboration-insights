@@ -9,7 +9,7 @@ Deno.test("privacy gate accepts the tracked repository and synthetic fixtures", 
 
 Deno.test("privacy gate rejects private content and generated local artifacts", async () => {
   const cases: Array<{ path: string; content: string }> = [
-    { path: "private-path.txt", content: "/Users/alice/work/private-project" },
+    { path: "private-path.txt", content: `/Users/${"alice"}/work/private-project` },
     { path: "secret.txt", content: `sk-${"A".repeat(32)}` },
     {
       path: "session.jsonl",
