@@ -34,6 +34,7 @@ The repository-level `/plans/` lane owns approved phase roadmaps and issue-level
 ## Current Baselines
 
 - Product: [AI 协作复盘台 PRD v0.2](PRD/ai-collaboration-review-prd-v0.2.md)
+- MVP scope: [Codex 日报 MVP 范围压缩决策 v0.1](PRD/codex-daily-report-mvp-scope-v0.1.md)
 - Readiness: [PRD Review v0.1](REVIEWS/prd-review-v0.1.md)
 - Backlog: [Published Issue Backlog v0.1](ISSUES/issue-publish-result-v0.1.md)
 - Roadmap: [AI Collaboration Insights V1](../plans/ai-collaboration-insights-v1.md)
