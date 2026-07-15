@@ -34,10 +34,11 @@ while IFS= read -r file; do
       ;;
   esac
 
-  if rg -q --pcre2 '/Users/(?!synthetic(?:[^A-Za-z0-9._-]|$)|example(?:[^A-Za-z0-9._-]|$)|test(?:[^A-Za-z0-9._-]|$))[A-Za-z0-9._-]+' "$file"; then
+  if rg -o '/Users/[A-Za-z0-9._-]+' "$file" |
+    rg -q -v '^/Users/(synthetic|example|test)$'; then
     report "private-absolute-path" "$file"
   fi
-  if rg -q --pcre2 '(?:sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{20,}|xox[baprs]-[A-Za-z0-9-]{20,}|BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY)' "$file"; then
+  if rg -q '(sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{20,}|xox[baprs]-[A-Za-z0-9-]{20,}|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY)' "$file"; then
     report "secret-pattern" "$file"
   fi
   case "$file" in
