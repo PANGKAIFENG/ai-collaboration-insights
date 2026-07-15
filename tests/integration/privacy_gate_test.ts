@@ -49,24 +49,15 @@ Deno.test("privacy gate accepts ordinary synthetic source text", async () => {
   }
 });
 
-Deno.test("privacy gate does not require optional PCRE2 support", async () => {
+Deno.test("privacy gate does not require ripgrep", async () => {
   const root = await Deno.makeTempDir();
   const bin = await Deno.makeTempDir();
   try {
-    const realRg = new TextDecoder().decode(
-      (await new Deno.Command("which", {
-        args: ["rg"],
-        stdout: "piped",
-      }).output()).stdout,
-    ).trim();
     const shim = `${bin}/rg`;
     await Deno.writeTextFile(
       shim,
       `#!/bin/sh
-for arg in "$@"; do
-  [ "$arg" = "--pcre2" ] && exit 2
-done
-exec "$REAL_RG" "$@"
+exit 127
 `,
       { mode: 0o755 },
     );
@@ -80,7 +71,6 @@ exec "$REAL_RG" "$@"
       await Deno.writeTextFile(`${root}/${name}`, content);
       const result = await runPrivacyGate([`${root}/${name}`], {
         PATH: `${bin}:${Deno.env.get("PATH") ?? ""}`,
-        REAL_RG: realRg,
       });
       assert(result.code !== 0, `expected privacy gate to reject ${name}`);
     }

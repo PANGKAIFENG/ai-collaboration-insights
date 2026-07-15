@@ -34,17 +34,17 @@ while IFS= read -r file; do
       ;;
   esac
 
-  if rg -o '/Users/[A-Za-z0-9._-]+' "$file" |
-    rg -q -v '^/Users/(synthetic|example|test)$'; then
+  if grep -Eo '/Users/[A-Za-z0-9._-]+' "$file" |
+    grep -Evq '^/Users/(synthetic|example|test)$'; then
     report "private-absolute-path" "$file"
   fi
-  if rg -q '(sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{20,}|xox[baprs]-[A-Za-z0-9-]{20,}|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY)' "$file"; then
+  if grep -Eq '(sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{20,}|xox[baprs]-[A-Za-z0-9-]{20,}|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY)' "$file"; then
     report "secret-pattern" "$file"
   fi
   case "$file" in
     tests/fixtures/codex/*.jsonl) ;;
     *.jsonl)
-      if rg -q '"type"[[:space:]]*:[[:space:]]*"session_meta"' "$file"; then
+      if grep -Eq '"type"[[:space:]]*:[[:space:]]*"session_meta"' "$file"; then
         report "codex-session-metadata" "$file"
       fi
       ;;
