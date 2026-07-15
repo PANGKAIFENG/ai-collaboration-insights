@@ -1,6 +1,6 @@
 # Contributing
 
-AI Collaboration Insights `v0.1.0` 当前处于 Codex-only 日报公开 alpha 阶段。
+AI Collaboration Insights `v0.2.0` 当前处于 Codex-only 日报公开 alpha 阶段。
 
 ## Before Starting
 
@@ -36,8 +36,13 @@ python3 scripts/eval_scoring_baseline.py \
   --rubric tests/eval/scoring-baseline/rubric.v1.json \
   --cases tests/eval/scoring-baseline/cases.v1.jsonl \
   --predictions tests/eval/scoring-baseline/predictions.conformance.jsonl
+python3 -m unittest tests/eval/test_progressive_analysis.py -v
+python3 scripts/eval_progressive_analysis.py \
+  --gold tests/eval/progressive-analysis/gold.synthetic.v1.jsonl \
+  --predictions tests/eval/progressive-analysis/predictions.conformance.v1.jsonl \
+  --share-safe
 sh scripts/privacy_check.sh
-sh -n scripts/install.sh scripts/uninstall.sh
+sh -n scripts/install.sh scripts/uninstall.sh scripts/privacy_check.sh
 git diff --check
 ```
 

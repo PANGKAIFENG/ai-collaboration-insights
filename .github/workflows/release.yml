@@ -58,7 +58,7 @@ jobs:
           cp ../scripts/install.sh ../scripts/uninstall.sh .
       - uses: softprops/action-gh-release@v2
         with:
-          body_path: docs/RELEASES/v0.1.0.md
+          body_path: docs/RELEASES/v0.2.0.md
           fail_on_unmatched_files: true
           files: |
             dist/aci-aarch64-apple-darwin

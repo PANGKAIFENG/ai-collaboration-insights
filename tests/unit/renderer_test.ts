@@ -133,6 +133,21 @@ Deno.test("renders data then outcomes then coaching with a strict static CSP", (
   assert(!html.includes("每条消息 Token"));
 });
 
+Deno.test("keeps long task outcomes inside the mobile viewport", () => {
+  const report = syntheticReport();
+  report.tasks[0].outcome = `/synthetic/${"unbroken-segment".repeat(30)}`;
+
+  const html = renderDailyReport(report);
+
+  assert(/\.task-main\{[^}]*min-width:0/.test(html));
+  assert(/\.task-main>p\{[^}]*overflow-wrap:anywhere/.test(html));
+  assert(
+    /@media\(max-width:760px\)\{[\s\S]*?\.task-row\{grid-template-columns:minmax\(0,1fr\)/.test(
+      html,
+    ),
+  );
+});
+
 Deno.test("escapes every model and log derived string as text", () => {
   const html = renderDailyReport(syntheticReport());
   assert(!html.includes('<script>alert("x")</script>'));

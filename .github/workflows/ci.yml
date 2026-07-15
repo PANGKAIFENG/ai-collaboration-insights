@@ -32,6 +32,14 @@ jobs:
           --rubric tests/eval/scoring-baseline/rubric.v1.json
           --cases tests/eval/scoring-baseline/cases.v1.jsonl
           --predictions tests/eval/scoring-baseline/predictions.conformance.jsonl
+      - name: Progressive analysis unit evaluation
+        run: python3 -m unittest tests/eval/test_progressive_analysis.py -v
+      - name: Progressive analysis conformance gate
+        run: >-
+          python3 scripts/eval_progressive_analysis.py
+          --gold tests/eval/progressive-analysis/gold.synthetic.v1.jsonl
+          --predictions tests/eval/progressive-analysis/predictions.conformance.v1.jsonl
+          --share-safe
       - name: Privacy gate
         run: sh scripts/privacy_check.sh
       - name: Shell syntax
@@ -62,7 +70,7 @@ jobs:
         if: >-
           (matrix.target == 'aarch64-apple-darwin' && runner.arch == 'ARM64') ||
           (matrix.target == 'x86_64-apple-darwin' && runner.arch == 'X64')
-        run: test "$(dist/aci-${{ matrix.target }} version)" = "0.1.0"
+        run: test "$(dist/aci-${{ matrix.target }} version)" = "0.2.0"
       - name: Checksum
         run: shasum -a 256 dist/aci-${{ matrix.target }}
       - uses: actions/upload-artifact@v4

@@ -6,10 +6,11 @@ Build an open-source, local-first product that helps individuals understand and 
 
 ## Current Phase
 
-`v0.1.0` has been released as a public alpha. Engineering validation on
-synthetic fixtures and the release installation path is complete. The current
-phase is seven active days of real Codex usage to validate report reliability,
-task recognition, comprehension, and coaching value before expanding scope.
+`v0.2.0` is the current public alpha. It adds trustworthy session facts,
+cross-session task reconstruction, semantic rounds, progressive per-task
+analysis and confidence-gated scoring without changing the Codex-only daily
+report product boundary. The current phase remains real-use validation of
+report reliability, task recognition, comprehension, and coaching value.
 
 ## Target User
 
@@ -56,7 +57,7 @@ report and:
 ## Public Alpha Validation Gates
 
 1. Across seven active Codex days, at least six reports generate without manual repair.
-2. Review at least 20 real tasks; task naming and project assignment reach 80% agreement.
+2. Review at least 20 real tasks; overall task grouping reaches 80% agreement and each required boundary slice reaches 70%.
 3. The user can understand the day's main work within one minute.
 4. At least one coaching suggestion is actionable and is tried in a later session.
 5. After seven days, the user still wants reports to generate automatically.

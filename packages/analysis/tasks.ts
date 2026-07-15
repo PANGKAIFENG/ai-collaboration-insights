@@ -248,9 +248,11 @@ export function reconstructTaskBoundaries(
     values.push(candidate);
     groups.set(root, values);
   }
-  const orderedGroups = [...groups.values()].toSorted((left, right) =>
-    left[0].events[0].timestamp.localeCompare(right[0].events[0].timestamp)
-  );
+  const orderedGroups = [...groups.values()]
+    .filter((group) => group.some((candidate) => candidate.events.some(isUserGoal)))
+    .toSorted((left, right) =>
+      left[0].events[0].timestamp.localeCompare(right[0].events[0].timestamp)
+    );
   const candidateToTask = new Map<string, string>();
   const tasks = orderedGroups.map((group, index): TaskBoundary => {
     const id = `task-${index + 1}`;
@@ -277,8 +279,11 @@ export function reconstructTaskBoundaries(
   const relations: TaskRelation[] = [];
   const weakRelationKeys = new Set<string>();
   for (const relation of rawRelations) {
-    relation.fromTaskId = candidateToTask.get(relation.fromTaskId) ?? relation.fromTaskId;
-    relation.toTaskId = candidateToTask.get(relation.toTaskId) ?? relation.toTaskId;
+    const fromTaskId = candidateToTask.get(relation.fromTaskId);
+    const toTaskId = candidateToTask.get(relation.toTaskId);
+    if (!fromTaskId || !toTaskId) continue;
+    relation.fromTaskId = fromTaskId;
+    relation.toTaskId = toTaskId;
     if (!relation.merged && relation.fromTaskId === relation.toTaskId) continue;
     if (!relation.merged) {
       const taskIds = [relation.fromTaskId, relation.toTaskId].sort();

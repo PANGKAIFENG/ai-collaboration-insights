@@ -29,7 +29,7 @@ async function runCli(args: string[], env?: Record<string, string>) {
 Deno.test("version prints the semantic version", async () => {
   const result = await runCli(["version"]);
   assertEquals(result.code, 0);
-  assertEquals(result.stdout, "0.1.0");
+  assertEquals(result.stdout, "0.2.0");
   assertEquals(result.stderr, "");
 });
 
@@ -41,7 +41,7 @@ Deno.test("doctor reports local readiness without exposing paths", async () => {
     const result = await runCli(["doctor"], { HOME: home, CODEX_HOME: `${home}/.codex` });
     assertEquals(result.code, 0);
     const status = JSON.parse(result.stdout);
-    assertEquals(status.version, "0.1.0");
+    assertEquals(status.version, "0.2.0");
     assertEquals(status.codexSessions, "ready");
     assert(!result.stdout.includes(home));
   } finally {
