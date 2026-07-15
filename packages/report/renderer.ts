@@ -56,39 +56,148 @@ function distributionDetail(
   return `均值 ${number(value.mean)} · 中位 ${number(value.median)} · n=${value.sampleSize}`;
 }
 
+function percent(value: number): string {
+  return `${Math.round(Math.max(0, Math.min(1, value)) * 100)}%`;
+}
+
+function scoreValue(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value)
+    ? Math.max(0, Math.min(100, value))
+    : null;
+}
+
+function taskAnalysisLabel(
+  task: DailyReport["tasks"][number],
+  report: DailyReport,
+): string {
+  const status = task.analysisStatus ?? "deterministic";
+  if (status === "analyzed") return "AI 已分析";
+  if (status === "not_analyzed") return "AI 未覆盖";
+  if (status === "degraded") return "分析已降级";
+  return report.analysisStatus.status === "not_consented" ? "确定性候选" : "确定性分析";
+}
+
+function verificationLabel(value: DailyReport["tasks"][number]["verification"]): string {
+  if (value === "verified") return "已验证";
+  if (value === "attempted") return "已尝试验证";
+  return "未观察到验证";
+}
+
+function roundLabel(round: DailyReport["tasks"][number]["keyRounds"][number]): string {
+  const trigger = {
+    intent: "目标建立",
+    user_feedback: "用户反馈",
+    verification_feedback: "验证反馈",
+    approach_change: "方案调整",
+    continuation: "继续推进",
+  }[round.trigger];
+  const status = {
+    baseline: "基线",
+    effective: "有效推进",
+    ineffective: "无效循环",
+    pending: "待观察",
+  }[round.status];
+  return `${trigger} · ${status}`;
+}
+
 export function renderDailyReport(report: DailyReport): string {
   const timeZone = report.window.timeZone;
+  const evidenceById = new Map(report.evidence.map((item) => [item.id, item]));
+  const coverage = report.analysisStatus.coverage;
+  const coverageRatio = coverage && coverage.totalTasks > 0
+    ? coverage.analyzedTasks / coverage.totalTasks
+    : undefined;
+  const completenessReasons = [
+    report.completeness.skippedLines > 0
+      ? `${number(report.completeness.skippedLines)} 条记录跳过`
+      : undefined,
+    report.completeness.unknownEvents > 0
+      ? `${number(report.completeness.unknownEvents)} 个未知事件`
+      : undefined,
+    ...report.completeness.notes,
+  ].filter((item): item is string => Boolean(item));
+  const degradedDimensions = report.score.dimensions.filter((item) =>
+    item.status === "degraded" || item.status === "candidate"
+  );
   const taskRows = report.tasks.length === 0
     ? `<p class="empty">该窗口没有足够信息形成任务候选。</p>`
-    : report.tasks.map((task) => `
+    : report.tasks.map((task) => {
+      const rounds = task.keyRounds.slice(0, 5).map((round) => `
+        <li data-round="${escapeHtml(round.id)}"><div><b>R${round.sequence}</b><span>${
+        escapeHtml(roundLabel(round))
+      }</span></div><small>${escapeHtml(dateTime(round.start, timeZone))} → ${
+        escapeHtml(dateTime(round.end, timeZone))
+      } · ${round.eventIds.length} 个事件${
+        round.loopReason ? " · 重复动作或反馈" : ""
+      }</small></li>`).join("");
+      const evidenceRows = task.evidenceIds.slice(0, 12).map((id) => {
+        const item = evidenceById.get(id);
+        return `<li><code>${escapeHtml(id)}</code><span>${
+          escapeHtml(item?.label ?? "证据摘要不可用")
+        }</span><small>${item ? `${percent(item.confidence)} 置信` : "引用保留"}</small></li>`;
+      }).join("");
+      const insightRows = report.sessionInsights.filter((insight) =>
+        task.sourceSessionIds.includes(insight.sessionRef)
+      ).slice(0, 2).map((insight) =>
+        `<li><span class="inference">AI 推断</span><b>${escapeHtml(insight.direction)}</b><p>${
+          escapeHtml(insight.conclusion)
+        }</p><small>${percent(insight.confidence)} 置信 · 证据 ${
+          escapeHtml(insight.evidenceIds.join(" · "))
+        }</small></li>`
+      ).join("");
+      return `
       <article class="task-row">
         <div class="task-time">${escapeHtml(dateTime(task.start, timeZone))}<br>${
-      escapeHtml(dateTime(task.end, timeZone))
-    }</div>
+        escapeHtml(dateTime(task.end, timeZone))
+      }</div>
         <div class="task-main">
           <div class="task-heading"><h3>${escapeHtml(task.name)}</h3><span class="confidence">${
-      Math.round(task.confidence * 100)
-    }% 置信</span></div>
+        Math.round(task.confidence * 100)
+      }% 置信</span></div>
           <p>${escapeHtml(task.outcome)}</p>
           <div class="task-meta"><span>${escapeHtml(task.projectLabel ?? "未知项目")}</span><span>${
-      number(task.activeMinutes)
-    } 分钟</span><span>${
-      task.verification === "verified" ? "已验证" : "未观察到验证"
-    }</span><span>${task.sourceSessionIds.length} 个会话 · ${task.relationIds.length} 条关系</span></div>
+        number(task.activeMinutes)
+      } 分钟</span><span>${
+        escapeHtml(verificationLabel(task.verification))
+      }</span><span>${task.sourceSessionIds.length} 个会话 · ${task.semanticRoundCount} 个语义轮次 · ${task.relationIds.length} 条关系</span><span class="analysis-tag">${
+        escapeHtml(taskAnalysisLabel(task, report))
+      }</span></div>
           <div class="evidence-line">证据 ${
-      escapeHtml(task.evidenceIds.join(" · ") || "不足")
-    }</div>
+        escapeHtml(task.evidenceIds.join(" · ") || "不足")
+      }</div>
+          <div class="task-details">
+            <details><summary>关键语义轮次 <span>${
+        Math.min(task.keyRounds.length, 5)
+      } / ${task.semanticRoundCount}</span></summary><ol class="round-list">${
+        rounds || "<li>暂无可展示轮次</li>"
+      }</ol></details>
+            <details><summary>证据详情 <span>${task.evidenceIds.length}</span></summary><ul class="evidence-list">${
+        evidenceRows || "<li>暂无可核对证据</li>"
+      }</ul></details>
+            ${
+        insightRows
+          ? `<details><summary>会话洞察 <span>AI 推断</span></summary><ul class="insight-list">${insightRows}</ul></details>`
+          : ""
+      }
+          </div>
         </div>
-      </article>`).join("");
+      </article>`;
+    }).join("");
 
   const dimensionRows = report.score.dimensions.length === 0
     ? `<p class="empty">证据不足，五维评分暂不可用。</p>`
-    : report.score.dimensions.map((dimension) => `
+    : report.score.dimensions.map((dimension) => {
+      const safeScore = scoreValue(dimension.score);
+      return `
       <div class="dimension">
-        <span>${escapeHtml(dimension.label)}</span>
-        <div class="track"><i style="width:${dimension.score ?? 0}%"></i></div>
-        <strong>${dimension.score === null ? "不可用" : dimension.score}</strong>
-      </div>`).join("");
+        <span>${escapeHtml(dimension.label)}${
+        dimension.status === "candidate" ? ' <i class="candidate">候选</i>' : ""
+      }</span>
+        <div class="track"><i style="width:${safeScore ?? 0}%"></i></div>
+        <strong>${safeScore === null ? "不可用" : safeScore}</strong>
+        ${dimension.reason ? `<small>${escapeHtml(dimension.reason)}</small>` : ""}
+      </div>`;
+    }).join("");
 
   const suggestions = report.coachSuggestions.length === 0
     ? `<p class="empty">当前没有足够证据生成可靠建议。继续完成任务并记录验证结果。</p>`
@@ -116,13 +225,13 @@ export function renderDailyReport(report: DailyReport): string {
     header{border-top:6px solid var(--ink);border-bottom:1px solid var(--ink);padding:22px 0 18px;display:grid;grid-template-columns:1fr auto;gap:24px;align-items:end}.kicker{font:700 12px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;text-transform:uppercase;color:var(--signal)}h1{font:600 clamp(30px,5vw,58px)/1.02 "Iowan Old Style","Palatino Linotype",serif;margin:8px 0 0}.header-meta{text-align:right;font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--muted)}
     .statusbar{display:flex;gap:8px;flex-wrap:wrap;padding:13px 0;border-bottom:1px solid var(--line)}.status{border:1px solid var(--line);padding:5px 8px;font-size:12px;background:var(--panel)}.status.warn{color:var(--warn);border-color:#d9aa9b}
     section{padding:42px 0;border-bottom:1px solid var(--ink)}.section-head{display:grid;grid-template-columns:72px 1fr;gap:16px;margin-bottom:24px}.section-no{font:700 13px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--signal)}h2{font:600 24px/1.2 "Iowan Old Style","Palatino Linotype",serif;margin:0}.section-note{color:var(--muted);font-size:13px;margin:5px 0 0}
-    .overview{display:grid;grid-template-columns:minmax(210px,.72fr) 1.28fr;gap:32px}.level{background:var(--ink);color:white;padding:24px;min-height:210px;display:flex;flex-direction:column;justify-content:space-between}.level small{color:#b9c4bc}.level strong{font:700 78px/.9 ui-monospace,SFMono-Regular,Menlo,monospace}.level p{margin:16px 0 0;font-size:13px;line-height:1.55;color:#d8ded9}.score{font:600 32px "Iowan Old Style","Palatino Linotype",serif;color:#71d8c0}
+    .quality{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--line);margin-bottom:26px;background:var(--panel)}.quality-item{padding:14px 16px;border-right:1px solid var(--line);min-height:92px}.quality-item:last-child{border-right:0}.quality-item span{display:block;font-size:11px;color:var(--muted)}.quality-item strong{display:block;margin:9px 0 5px;font:600 18px ui-monospace,SFMono-Regular,Menlo,monospace}.quality-item small{display:block;color:var(--muted);line-height:1.45;overflow-wrap:anywhere}.overview{display:grid;grid-template-columns:minmax(210px,.72fr) 1.28fr;gap:32px}.level{background:var(--ink);color:white;padding:24px;min-height:210px;display:flex;flex-direction:column;justify-content:space-between}.level small{color:#b9c4bc}.level strong{font:700 78px/.9 ui-monospace,SFMono-Regular,Menlo,monospace}.level p{margin:16px 0 0;font-size:13px;line-height:1.55;color:#d8ded9}.score{font:600 32px "Iowan Old Style","Palatino Linotype",serif;color:#71d8c0}
     .metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid var(--line);border-left:1px solid var(--line)}.metric{min-height:105px;padding:14px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);display:flex;flex-direction:column;justify-content:space-between;background:var(--panel)}.metric span,.metric small{font-size:11px;color:var(--muted)}.metric strong{font:600 25px ui-monospace,SFMono-Regular,Menlo,monospace;overflow-wrap:anywhere}
-    .dimensions{margin-top:24px}.dimension{display:grid;grid-template-columns:92px 1fr 54px;gap:12px;align-items:center;padding:8px 0;font-size:13px}.dimension strong{text-align:right;font:600 13px ui-monospace,SFMono-Regular,Menlo,monospace}.track{height:7px;background:var(--soft)}.track i{height:100%;display:block;background:var(--signal);max-width:100%}
-    .task-row{display:grid;grid-template-columns:132px 1fr;gap:20px;padding:22px 0;border-top:1px solid var(--line)}.task-row:last-child{border-bottom:1px solid var(--line)}.task-time{font:12px/1.65 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--muted)}.task-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}.task-heading h3,.coach-row h3{font-size:16px;line-height:1.35;margin:0;overflow-wrap:anywhere}.confidence{white-space:nowrap;font:11px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--signal)}.task-main p{margin:8px 0 12px;color:#323934;line-height:1.65}.task-meta{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:12px;color:var(--muted)}.evidence-line{margin-top:8px;font:10px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;color:#7d857f;overflow-wrap:anywhere}
+    .dimensions{margin-top:24px}.dimension{display:grid;grid-template-columns:110px 1fr 54px;gap:12px;align-items:center;padding:8px 0;font-size:13px}.dimension>small{grid-column:2/-1;color:var(--warn);line-height:1.4}.dimension strong{text-align:right;font:600 13px ui-monospace,SFMono-Regular,Menlo,monospace}.candidate,.inference{font:600 9px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--warn);font-style:normal}.track{height:7px;background:var(--soft)}.track i{height:100%;display:block;background:var(--signal);max-width:100%}
+    .task-row{display:grid;grid-template-columns:132px 1fr;gap:20px;padding:22px 0;border-top:1px solid var(--line)}.task-row:last-child{border-bottom:1px solid var(--line)}.task-time{font:12px/1.65 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--muted)}.task-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}.task-heading h3,.coach-row h3{font-size:16px;line-height:1.35;margin:0;overflow-wrap:anywhere}.confidence{white-space:nowrap;font:11px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--signal)}.task-main>p{margin:8px 0 12px;color:#323934;line-height:1.65}.task-meta{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:12px;color:var(--muted)}.analysis-tag{color:var(--signal)}.evidence-line{margin-top:8px;font:10px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;color:#7d857f;overflow-wrap:anywhere}.task-details{margin-top:14px;border-top:1px dashed var(--line)}details{border-bottom:1px dashed var(--line)}summary{cursor:pointer;padding:10px 0;font-size:12px;font-weight:600;list-style-position:inside}summary span{float:right;color:var(--muted);font:10px ui-monospace,SFMono-Regular,Menlo,monospace}.round-list,.evidence-list,.insight-list{list-style:none;margin:0;padding:0 0 10px}.round-list li,.evidence-list li,.insight-list li{padding:9px 0;border-top:1px solid var(--soft);font-size:12px}.round-list li div{display:flex;gap:12px}.round-list b{font:600 11px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--signal)}.round-list small,.evidence-list small,.insight-list small{display:block;margin-top:4px;color:var(--muted)}.evidence-list li{display:grid;grid-template-columns:minmax(110px,.45fr) 1fr auto;gap:10px;align-items:start}.evidence-list code{overflow-wrap:anywhere}.evidence-list small{margin:0}.insight-list b{margin-left:8px}.insight-list p{margin:6px 0}
     .coach-row{display:grid;grid-template-columns:64px 1fr;gap:18px;padding:22px 0;border-top:1px solid var(--line)}.coach-number{font:600 28px "Iowan Old Style","Palatino Linotype",serif;color:var(--warn)}.coach-row p{margin:9px 0;color:#323934;line-height:1.55}.coach-row b{display:inline-block;min-width:82px;color:var(--ink)}.coach-row small{color:var(--muted)}.empty{padding:24px 0;color:var(--muted)}footer{padding-top:20px;color:var(--muted);font:11px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;overflow-wrap:anywhere}
-    @media(max-width:760px){main{width:min(100% - 28px,1180px);padding-top:14px}header{grid-template-columns:1fr}.header-meta{text-align:left}.overview{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.section-head{grid-template-columns:42px 1fr}.task-row{grid-template-columns:1fr;gap:8px}.task-heading{display:block}.confidence{display:inline-block;margin-top:6px}.coach-row{grid-template-columns:42px 1fr}.level{min-height:180px}.level strong{font-size:64px}}
-    @media(max-width:380px){.metrics{grid-template-columns:1fr}.dimension{grid-template-columns:76px minmax(70px,1fr) 44px}.task-meta{display:grid}.status{max-width:100%;overflow-wrap:anywhere}}
+    @media(max-width:760px){main{width:min(100% - 28px,1180px);padding-top:14px}header{grid-template-columns:1fr}.header-meta{text-align:left}.quality{grid-template-columns:1fr}.quality-item{border-right:0;border-bottom:1px solid var(--line)}.quality-item:last-child{border-bottom:0}.overview{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.section-head{grid-template-columns:42px 1fr}.task-row{grid-template-columns:1fr;gap:8px}.task-heading{display:block}.confidence{display:inline-block;margin-top:6px}.evidence-list li{grid-template-columns:1fr}.coach-row{grid-template-columns:42px 1fr}.level{min-height:180px}.level strong{font-size:64px}}
+    @media(max-width:380px){.metrics{grid-template-columns:1fr}.dimension{grid-template-columns:88px minmax(70px,1fr) 44px}.task-meta{display:grid}.status{max-width:100%;overflow-wrap:anywhere}summary span{float:none;margin-left:6px}}
   </style>
 </head>
 <body><main>
@@ -143,6 +252,29 @@ export function renderDailyReport(report: DailyReport): string {
     escapeHtml(dateTime(report.generatedAt, timeZone))
   }</span></div>
   <section><div class="section-head"><div class="section-no">01</div><div><h2>数据与层级</h2><p class="section-note">使用强度只做事实展示，不直接提高协作评分。</p></div></div>
+    <div class="quality"><div class="quality-item"><span>数据质量</span><strong>${
+    escapeHtml(statusLabel(report))
+  }</strong><small>${
+    escapeHtml(
+      completenessReasons.join(" · ") || `${number(report.completeness.parsedEvents)} 个事件已解析`,
+    )
+  }</small></div><div class="quality-item"><span>分析覆盖</span><strong>${
+    coverageRatio === undefined ? "不适用" : percent(coverageRatio)
+  }</strong><small>${
+    escapeHtml(
+      coverage
+        ? `${coverage.analyzedTasks} / ${coverage.totalTasks} 个任务 · ${coverage.detailTasks} 个详情回读`
+        : analysisLabel(report),
+    )
+  }</small></div><div class="quality-item"><span>评分门禁</span><strong>${
+    degradedDimensions.length === 0 ? "证据可用" : `${degradedDimensions.length} 项降级`
+  }</strong><small>${
+    escapeHtml(
+      report.analysisStatus.reason ??
+        (degradedDimensions.map((item) => item.reason).filter(Boolean).join(" · ") ||
+          "仅使用完整且可核对的证据"),
+    )
+  }</small></div></div>
     <div class="overview"><div class="level"><small>当日协作层级</small><strong>${
     escapeHtml(report.maturity.level)
   }</strong><div class="score">${

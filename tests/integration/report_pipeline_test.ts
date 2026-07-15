@@ -179,6 +179,63 @@ Deno.test("enriches a deterministic report only after consent", async () => {
   }
 });
 
+Deno.test("marks per-task analysis status and rescoring context on partial AI coverage", async () => {
+  const root = await Deno.makeTempDir();
+  const sourceRoot = `${root}/source`;
+  const dataDir = `${root}/data`;
+  await Deno.mkdir(sourceRoot);
+  await Deno.copyFile(sourceFixture, `${sourceRoot}/session.jsonl`);
+  await appendUserMessage(
+    `${sourceRoot}/session.jsonl`,
+    "second-task",
+    "2026-07-14T11:20:00.000Z",
+    "另外一个任务：整理发布说明",
+  );
+  try {
+    await grantConsent(`${dataDir}/consent.json`, new Date("2026-07-15T11:00:00.000Z"));
+    const result = await generateDailyReport({
+      date: "2026-07-15",
+      timeZone: "Asia/Shanghai",
+      sourceRoot,
+      dataDir,
+      noAi: false,
+      generationReason: "manual",
+      analyzerRunner: () =>
+        Promise.resolve({
+          code: 0,
+          output: JSON.stringify({
+            tasks: [{
+              id: "task-1",
+              name: "Deliver report window coverage",
+              outcome: "A synthetic parser change was recorded",
+              verificationStatus: "not_observed",
+              confidence: 0.9,
+              evidenceIds: ["task-1-intent"],
+              needsDetail: false,
+              conflict: false,
+            }],
+            insights: [],
+            suggestions: [],
+          }),
+        }),
+    });
+
+    assertEquals(result.report.analysisStatus.status, "partial");
+    assertEquals(result.report.analysisStatus.coverage?.analyzedTasks, 1);
+    assertEquals(
+      result.report.tasks.find((task) => task.id === "task-1")?.analysisStatus,
+      "analyzed",
+    );
+    assertEquals(
+      result.report.tasks.some((task) => task.analysisStatus === "not_analyzed"),
+      true,
+    );
+    assert(result.report.maturity.reason.includes("1 /"));
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
 Deno.test("publishes one independent evidence packet for every task across sessions", async () => {
   const root = await Deno.makeTempDir();
   const sourceRoot = `${root}/source`;

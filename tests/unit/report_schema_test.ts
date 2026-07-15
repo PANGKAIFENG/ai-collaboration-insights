@@ -74,6 +74,54 @@ Deno.test("rejects more than three coach suggestions", async () => {
 Deno.test("migrates a v1 report without session insights", () => {
   const value = report() as unknown as Record<string, unknown>;
   delete value.sessionInsights;
+  value.tasks = [{
+    id: "legacy-task",
+    name: "Legacy task",
+    start: "2026-07-14T11:00:00.000Z",
+    end: "2026-07-14T11:10:00.000Z",
+    activeMinutes: 10,
+    outcome: "Legacy outcome",
+    verification: "not_observed",
+    confidence: 0.7,
+    evidenceIds: ["legacy-evidence"],
+    sourceSessionIds: ["legacy-session"],
+    relationIds: [],
+    semanticRoundCount: 0,
+    effectiveRoundCount: 0,
+    keyRounds: [],
+    hasIteration: false,
+    hasVerification: false,
+    hasReusableAsset: false,
+  }];
+  value.evidence = [{
+    id: "legacy-evidence",
+    type: "intent",
+    label: "Legacy evidence",
+    eventIds: ["legacy-event"],
+    confidence: 0.7,
+  }];
+  value.score = {
+    total: 65,
+    dimensions: [{
+      key: "intent",
+      label: "目标表达",
+      score: 65,
+      confidence: 0.7,
+      evidenceIds: ["legacy-evidence"],
+    }],
+  };
   const migrated = validateDailyReport(value);
   assertEquals(migrated.sessionInsights, []);
+  assertEquals(
+    (migrated.tasks[0] as unknown as { analysisStatus: string }).analysisStatus,
+    "deterministic",
+  );
+  assertEquals(
+    (migrated.evidence[0] as unknown as { availability: string }).availability,
+    "complete",
+  );
+  assertEquals(
+    (migrated.score.dimensions[0] as unknown as { status: string }).status,
+    "available",
+  );
 });

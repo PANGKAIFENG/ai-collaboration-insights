@@ -1,9 +1,25 @@
-import { assert } from "../_assert.ts";
+import { assert, assertEquals } from "../_assert.ts";
 import { renderDailyReport, renderReportIndex } from "../../packages/report/renderer.ts";
 import { APP_VERSION, type DailyReport, REPORT_SCHEMA_VERSION } from "../../packages/core/types.ts";
 import { reportDateWindow } from "../../packages/core/time.ts";
 
 function syntheticReport(): DailyReport {
+  const keyRounds = Array.from({ length: 6 }, (_, index) => ({
+    id: `round-${index + 1}`,
+    taskId: "task-1",
+    sequence: index + 1,
+    start: `2026-07-14T11:${String(index).padStart(2, "0")}:00.000Z`,
+    end: `2026-07-14T11:${String(index + 1).padStart(2, "0")}:00.000Z`,
+    trigger: index === 0 ? "intent" as const : "user_feedback" as const,
+    status: index === 0 ? "baseline" as const : "effective" as const,
+    eventIds: [`round-event-${index + 1}`],
+    intentEventIds: [],
+    attemptEventIds: [],
+    feedbackEventIds: [],
+    adjustmentEventIds: [],
+    resultEventIds: [],
+    lifecycleEventIds: [],
+  }));
   return {
     schemaVersion: REPORT_SCHEMA_VERSION,
     reportId: "synthetic-report",
@@ -57,7 +73,7 @@ function syntheticReport(): DailyReport {
       relationIds: [],
       semanticRoundCount: 1,
       effectiveRoundCount: 0,
-      keyRounds: [],
+      keyRounds,
       hasIteration: true,
       hasVerification: false,
       hasReusableAsset: false,
@@ -78,7 +94,7 @@ function syntheticReport(): DailyReport {
     evidence: [{
       id: "evidence-1",
       type: "intent",
-      label: "User goal",
+      label: '<img src=x onerror="evidence()">',
       eventIds: ["event-1"],
       confidence: 0.8,
     }],
@@ -114,6 +130,7 @@ Deno.test("renders data then outcomes then coaching with a strict static CSP", (
   assert(!/https?:\/\//i.test(html));
   assert(/footer\{[^}]*overflow-wrap:anywhere/.test(html));
   assert(html.includes("中位 2"));
+  assert(!html.includes("每条消息 Token"));
 });
 
 Deno.test("escapes every model and log derived string as text", () => {
@@ -122,6 +139,40 @@ Deno.test("escapes every model and log derived string as text", () => {
   assert(!html.includes('<img src=x onerror="alert(1)">'));
   assert(html.includes("&lt;script&gt;"));
   assert(html.includes("&lt;img"));
+  assert(!html.includes('<img src=x onerror="evidence()">'));
+});
+
+Deno.test("renders quality coverage task status evidence and at most five key rounds", () => {
+  const report = syntheticReport() as unknown as DailyReport & {
+    tasks: Array<DailyReport["tasks"][number] & { analysisStatus?: string }>;
+  };
+  report.analysisStatus = {
+    mode: "ai_enriched",
+    status: "partial",
+    reason: "one synthetic task timed out",
+    coverage: { totalTasks: 2, analyzedTasks: 1, detailTasks: 1 },
+  };
+  report.tasks[0].analysisStatus = "analyzed";
+  const html = renderDailyReport(report);
+
+  assert(html.indexOf("数据质量") < html.indexOf("当日协作层级"));
+  assert(html.includes("50%"));
+  assert(html.includes("AI 已分析"));
+  assert(html.includes("关键语义轮次"));
+  assert(html.includes("证据详情"));
+  assertEquals((html.match(/data-round=/g) ?? []).length, 5);
+  assert(html.includes("one synthetic task timed out"));
+});
+
+Deno.test("does not interpolate an unsafe dimension score into inline styles", () => {
+  const report = syntheticReport();
+  report.score.dimensions[0].score = '100";background:url(evil)' as unknown as number;
+
+  const html = renderDailyReport(report);
+
+  assert(!html.includes("background:url(evil)"));
+  assert(html.includes('style="width:0%"'));
+  assert(html.includes("不可用"));
 });
 
 Deno.test("renders a controlled relative-link history index", () => {

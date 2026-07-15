@@ -35,6 +35,26 @@ export function validateDailyReport(value: unknown): DailyReport {
   ) {
     throw new Error("report collections must be arrays");
   }
+  for (const value of report.tasks) {
+    const task = object(value);
+    if (!task) throw new Error("invalid task");
+    if (task.analysisStatus === undefined) task.analysisStatus = "deterministic";
+  }
+  for (const value of report.evidence) {
+    const evidence = object(value);
+    if (!evidence) throw new Error("invalid evidence");
+    if (evidence.availability === undefined) evidence.availability = "complete";
+    if (evidence.sourceCategories === undefined) evidence.sourceCategories = [];
+  }
+  const score = object(report.score);
+  if (!score || !Array.isArray(score.dimensions)) throw new Error("invalid score");
+  for (const value of score.dimensions) {
+    const dimension = object(value);
+    if (!dimension) throw new Error("invalid score dimension");
+    if (dimension.status === undefined) {
+      dimension.status = dimension.score === null ? "unavailable" : "available";
+    }
+  }
   if (report.sessionInsights === undefined) report.sessionInsights = [];
   if (!Array.isArray(report.sessionInsights)) throw new Error("sessionInsights must be an array");
   if (!Array.isArray(report.coachSuggestions)) throw new Error("coachSuggestions must be an array");

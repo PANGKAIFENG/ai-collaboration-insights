@@ -78,6 +78,25 @@ function validRole(value: unknown): UnifiedEvent["role"] {
   return value === "user" || value === "assistant" || value === "developer" ? value : undefined;
 }
 
+function classifyToolAction(
+  payload: JsonObject,
+  toolName: string,
+): UnifiedEvent["actionCategory"] {
+  if (/apply_patch|write(?:_file)?|create(?:_file)?|edit(?:_file)?/i.test(toolName)) {
+    return "artifact_change";
+  }
+  if (/(^|[_.-])(test|check|lint|build|verify)([_.-]|$)/i.test(toolName)) {
+    return "verification";
+  }
+  const raw = string(payload.arguments) ?? string(payload.input) ?? "";
+  const bounded = raw.slice(0, 32_000);
+  if (
+    /\b(?:deno\s+(?:task\s+)?(?:test|check|lint|verify)|npm\s+(?:run\s+)?(?:test|check|lint|build|verify)|pnpm\s+(?:run\s+)?(?:test|check|lint|build|verify)|yarn\s+(?:run\s+)?(?:test|check|lint|build|verify)|bun\s+(?:run\s+)?(?:test|check|lint|build|verify)|cargo\s+(?:test|check|build)|go\s+test|pytest|ruff\s+check|npx\s+tsc|make\s+test)\b/i
+      .test(bounded)
+  ) return "verification";
+  return undefined;
+}
+
 async function stableEventId(
   state: ParserState,
   payload: JsonObject,
@@ -143,6 +162,7 @@ export async function parseCodexLine(
   let kind: UnifiedEvent["kind"] | undefined;
   let role: UnifiedEvent["role"];
   let toolName: string | undefined;
+  let actionCategory: UnifiedEvent["actionCategory"];
   let usage: Usage | undefined;
   let usageSemantics: UnifiedEvent["usageSemantics"];
   let subagentDepth: number | undefined;
@@ -159,6 +179,7 @@ export async function parseCodexLine(
     } else if (payloadType === "function_call" || payloadType === "custom_tool_call") {
       kind = "tool_call";
       toolName = string(payload.name) ?? "unknown-tool";
+      actionCategory = classifyToolAction(payload, toolName);
     } else if (payloadType === "web_search_call" || payloadType === "tool_search_call") {
       kind = "tool_call";
       toolName = payloadType === "web_search_call" ? "web_search" : "tool_search";
@@ -234,6 +255,7 @@ export async function parseCodexLine(
       usage,
       usageSemantics,
       toolName,
+      actionCategory,
       subagentDepth,
       subagentRunId,
       subagentStatus,
