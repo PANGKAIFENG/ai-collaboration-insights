@@ -4,9 +4,11 @@ import type {
   TaskSummary,
   UnifiedEvent,
   Usage,
+  UsageDistributions,
   WorkBlock,
 } from "../core/types.ts";
 import { scoreCollaboration } from "./scoring.ts";
+import { buildSessionFacts } from "./facts.ts";
 
 const ACTIVE_SEGMENT_MS = 5 * 60 * 1000;
 const MERGE_GAP_MS = 20 * 60 * 1000;
@@ -24,9 +26,11 @@ export interface DeterministicAnalysis {
     toolCalls: number;
     skillCalls: number;
     subagentCalls: number;
+    subagentInterrupted: number;
     activeMinutes: number;
     tokens: Usage;
   };
+  usageDistributions: UsageDistributions;
   workBlocks: WorkBlock[];
   tasks: TaskSummary[];
   evidence: Evidence[];
@@ -202,20 +206,6 @@ function blockProjection(
   };
 }
 
-function addUsage(target: Usage, source: Usage): void {
-  for (
-    const key of [
-      "inputTokens",
-      "cachedInputTokens",
-      "outputTokens",
-      "reasoningTokens",
-      "totalTokens",
-    ] as const
-  ) {
-    if (source[key] !== undefined) target[key] = (target[key] ?? 0) + source[key]!;
-  }
-}
-
 export function analyzeDeterministically(
   events: UnifiedEvent[],
   window: ReportWindow,
@@ -227,20 +217,20 @@ export function analyzeDeterministically(
   const workBlocks = projections.map((item) => item.block);
   const tasks = projections.map((item) => item.task);
   const allEvidence = projections.flatMap((item) => item.evidence);
-  const tokens: Usage = {};
-  for (const event of events) if (event.usage) addUsage(tokens, event.usage);
+  const facts = buildSessionFacts(events, window);
   const usageMetrics = {
     sessions: new Set(events.map((event) => event.sourceSessionId)).size,
     messages: events.filter((event) => event.kind === "message").length,
     toolCalls: events.filter((event) => event.kind === "tool_call").length,
     skillCalls: events.filter((event) => /skill/i.test(event.toolName ?? "")).length,
-    subagentCalls: events.filter((event) => event.kind === "subagent").length,
-    activeMinutes:
-      Math.round(workBlocks.reduce((sum, block) => sum + block.activeMinutes, 0) * 10) / 10,
-    tokens,
+    subagentCalls: facts.totals.subagentRuns,
+    subagentInterrupted: facts.totals.subagentInterrupted,
+    activeMinutes: facts.totals.activeMinutes,
+    tokens: facts.totals.tokens,
   };
   return {
     usageMetrics,
+    usageDistributions: facts.distributions,
     workBlocks,
     tasks,
     evidence: allEvidence,

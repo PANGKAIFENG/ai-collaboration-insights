@@ -194,6 +194,7 @@ export async function generateDailyReport(
         notes: scan.diagnostics.truncated ? ["事件数量达到安全上限"] : [],
       },
       usageMetrics: deterministic.usageMetrics,
+      usageDistributions: deterministic.usageDistributions,
       workBlocks: deterministic.workBlocks,
       tasks: deterministic.tasks,
       score: { total: deterministic.score.total, dimensions: deterministic.score.dimensions },

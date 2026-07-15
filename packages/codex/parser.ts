@@ -54,16 +54,23 @@ function contentText(payload: JsonObject): string | undefined {
   return parts.length > 0 ? parts.join(" ") : undefined;
 }
 
-function usageFrom(payload: JsonObject): Usage | undefined {
+function usageFrom(
+  payload: JsonObject,
+): { usage: Usage; semantics: NonNullable<UnifiedEvent["usageSemantics"]> } | undefined {
   const info = object(payload.info);
-  const raw = object(info?.last_token_usage);
+  const total = object(info?.total_token_usage);
+  const last = object(info?.last_token_usage);
+  const raw = last ?? total;
   if (!raw) return undefined;
   return {
-    inputTokens: number(raw.input_tokens),
-    cachedInputTokens: number(raw.cached_input_tokens),
-    outputTokens: number(raw.output_tokens),
-    reasoningTokens: number(raw.reasoning_output_tokens),
-    totalTokens: number(raw.total_tokens),
+    usage: {
+      inputTokens: number(raw.input_tokens),
+      cachedInputTokens: number(raw.cached_input_tokens),
+      outputTokens: number(raw.output_tokens),
+      reasoningTokens: number(raw.reasoning_output_tokens),
+      totalTokens: number(raw.total_tokens),
+    },
+    semantics: "session_cumulative",
   };
 }
 
@@ -137,7 +144,10 @@ export async function parseCodexLine(
   let role: UnifiedEvent["role"];
   let toolName: string | undefined;
   let usage: Usage | undefined;
+  let usageSemantics: UnifiedEvent["usageSemantics"];
   let subagentDepth: number | undefined;
+  let subagentRunId: string | undefined;
+  let subagentStatus: UnifiedEvent["subagentStatus"];
   let previewSource: string | undefined;
 
   if (rootType === "response_item") {
@@ -149,8 +159,12 @@ export async function parseCodexLine(
     } else if (payloadType === "function_call" || payloadType === "custom_tool_call") {
       kind = "tool_call";
       toolName = string(payload.name) ?? "unknown-tool";
+    } else if (payloadType === "web_search_call" || payloadType === "tool_search_call") {
+      kind = "tool_call";
+      toolName = payloadType === "web_search_call" ? "web_search" : "tool_search";
     } else if (
-      payloadType === "function_call_output" || payloadType === "custom_tool_call_output"
+      payloadType === "function_call_output" || payloadType === "custom_tool_call_output" ||
+      payloadType === "tool_search_output"
     ) {
       kind = "tool_result";
     } else if (payloadType === "reasoning") {
@@ -159,12 +173,21 @@ export async function parseCodexLine(
   } else if (rootType === "event_msg") {
     const payloadType = string(payload.type);
     if (payloadType === "token_count") {
-      usage = usageFrom(payload);
-      if (!usage) return { status: "ignored", timestamp };
+      const snapshot = usageFrom(payload);
+      if (!snapshot) return { status: "ignored", timestamp };
+      usage = snapshot.usage;
+      usageSemantics = snapshot.semantics;
       kind = "usage";
     } else if (payloadType === "sub_agent_activity") {
       kind = "subagent";
-      toolName = string(payload.kind) ?? "subagent";
+      const lifecycle = string(payload.kind);
+      toolName = lifecycle ?? "subagent";
+      subagentStatus = lifecycle === "started" || lifecycle === "interacted" ||
+          lifecycle === "interrupted" || lifecycle === "completed"
+        ? lifecycle
+        : "unknown";
+      const rawRunId = string(payload.agent_thread_id);
+      subagentRunId = rawRunId ? await sha256(`codex-agent:${rawRunId}`) : undefined;
       subagentDepth = Math.max(
         1,
         string(payload.agent_path)?.split("/").filter(Boolean).length ?? 1,
@@ -177,7 +200,8 @@ export async function parseCodexLine(
       return { status: "ignored", timestamp };
     }
   } else if (
-    rootType === "turn_context" || rootType === "compacted" || rootType === "world_state"
+    rootType === "turn_context" || rootType === "compacted" || rootType === "world_state" ||
+    rootType === "inter_agent_communication_metadata"
   ) {
     return { status: "ignored", timestamp };
   } else {
@@ -208,8 +232,11 @@ export async function parseCodexLine(
       kind,
       role,
       usage,
+      usageSemantics,
       toolName,
       subagentDepth,
+      subagentRunId,
+      subagentStatus,
       projectRef: state.projectRef,
       projectLabel: state.projectLabel,
       contentDigest,

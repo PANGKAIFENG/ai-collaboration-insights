@@ -29,13 +29,30 @@ export interface UnifiedEvent {
   role?: "user" | "assistant" | "developer";
   model?: string;
   usage?: Usage;
+  usageSemantics?: "session_cumulative" | "call_increment" | "unknown_snapshot";
   toolName?: string;
   subagentDepth?: number;
+  subagentRunId?: string;
+  subagentStatus?: "started" | "interacted" | "interrupted" | "completed" | "unknown";
   projectRef?: string;
   projectLabel?: string;
   contentDigest?: string;
   contentPreview?: string;
   availability: "available" | "partial" | "unavailable";
+}
+
+export interface DistributionSummary {
+  sampleSize: number;
+  mean: number;
+  median: number;
+  p90: number;
+}
+
+export interface UsageDistributions {
+  messagesPerSession: DistributionSummary;
+  toolCallsPerSession: DistributionSummary;
+  tokensPerSession: DistributionSummary;
+  activeMinutesPerSession: DistributionSummary;
 }
 
 export interface ReportWindow {
@@ -115,9 +132,11 @@ export interface DailyReport {
     toolCalls: number;
     skillCalls: number;
     subagentCalls: number;
+    subagentInterrupted: number;
     activeMinutes: number;
     tokens: Usage;
   };
+  usageDistributions: UsageDistributions;
   workBlocks: WorkBlock[];
   tasks: TaskSummary[];
   score: { total: number | null; dimensions: ScoreDimension[] };

@@ -49,6 +49,12 @@ function metric(label: string, value: string, detail: string): string {
   }</strong><small>${escapeHtml(detail)}</small></div>`;
 }
 
+function distributionDetail(
+  value: DailyReport["usageDistributions"][keyof DailyReport["usageDistributions"]],
+): string {
+  return `均值 ${number(value.mean)} · 中位 ${number(value.median)} · n=${value.sampleSize}`;
+}
+
 export function renderDailyReport(report: DailyReport): string {
   const timeZone = report.window.timeZone;
   const taskRows = report.tasks.length === 0
@@ -145,25 +151,37 @@ export function renderDailyReport(report: DailyReport): string {
       number(report.usageMetrics.tokens.totalTokens),
       `输入 ${number(report.usageMetrics.tokens.inputTokens)} · 输出 ${
         number(report.usageMetrics.tokens.outputTokens)
-      }`,
+      } · ${distributionDetail(report.usageDistributions.tokensPerSession)}`,
     )
   }${
     metric(
       "会话",
       number(report.usageMetrics.sessions),
-      `${number(report.usageMetrics.messages)} 条消息`,
+      `${number(report.usageMetrics.messages)} 条消息 · ${
+        distributionDetail(report.usageDistributions.messagesPerSession)
+      }`,
     )
   }${
     metric(
       "工具调用",
       number(report.usageMetrics.toolCalls),
-      `${number(report.usageMetrics.skillCalls)} 次 Skill`,
+      `${number(report.usageMetrics.skillCalls)} 次 Skill · ${
+        distributionDetail(report.usageDistributions.toolCallsPerSession)
+      }`,
     )
-  }${metric("Subagent", number(report.usageMetrics.subagentCalls), "并行时长不重复累计")}${
+  }${
+    metric(
+      "Subagent",
+      number(report.usageMetrics.subagentCalls),
+      `${number(report.usageMetrics.subagentInterrupted)} 次中断 · 按唯一运行统计`,
+    )
+  }${
     metric(
       "活跃时间",
       `${number(report.usageMetrics.activeMinutes)}m`,
-      `${report.workBlocks.length} 个工作区间`,
+      `${report.workBlocks.length} 个工作区间 · ${
+        distributionDetail(report.usageDistributions.activeMinutesPerSession)
+      }`,
     )
   }${metric("任务", number(report.tasks.length), "基于时间与项目候选")}${
     metric("跳过记录", number(report.completeness.skippedLines), "解析完整度")
