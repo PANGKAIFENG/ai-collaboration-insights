@@ -61,10 +61,28 @@ Deno.test("counts tokens and subagents without adding parallel duration", () => 
     event("u", "2026-07-14T11:00:00.000Z", "message", { role: "user" }),
     event("tokens", "2026-07-14T11:01:00.000Z", "usage", {
       usage: { inputTokens: 100, outputTokens: 25, totalTokens: 125 },
+      usageSemantics: "session_cumulative",
     }),
-    event("agent", "2026-07-14T11:02:00.000Z", "subagent", { subagentDepth: 1 }),
+    event("agent", "2026-07-14T11:02:00.000Z", "subagent", {
+      subagentDepth: 1,
+      subagentRunId: "run-a",
+      subagentStatus: "started",
+    }),
   ], reportDateWindow("2026-07-15", "Asia/Shanghai"));
   assertEquals(result.usageMetrics.tokens.totalTokens, 125);
   assertEquals(result.usageMetrics.subagentCalls, 1);
   assertEquals(result.usageMetrics.activeMinutes, 7);
+});
+
+Deno.test("does not double count overlapping activity across projects", () => {
+  const result = analyzeDeterministically([
+    event("a", "2026-07-14T11:00:00.000Z", "message", { role: "user" }),
+    event("b", "2026-07-14T11:01:00.000Z", "message", {
+      role: "user",
+      sourceSessionId: "session-b",
+      projectRef: "project-b",
+    }),
+  ], reportDateWindow("2026-07-15", "Asia/Shanghai"));
+  assertEquals(result.workBlocks.length, 2);
+  assertEquals(result.usageMetrics.activeMinutes, 6);
 });

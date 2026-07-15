@@ -65,6 +65,67 @@ Deno.test("maps last token usage without treating cumulative totals as another e
     reasoningTokens: 1,
     totalTokens: 16,
   });
+  assertEquals(result.event?.usageSemantics, "session_cumulative");
+});
+
+Deno.test("maps supported search response items without unknown diagnostics", async () => {
+  const state = createParserState();
+  const call = await parseCodexLine(
+    JSON.stringify({
+      timestamp: "2026-07-14T11:05:00.000Z",
+      type: "response_item",
+      payload: { type: "web_search_call", id: "search-1" },
+    }),
+    5,
+    state,
+  );
+  const output = await parseCodexLine(
+    JSON.stringify({
+      timestamp: "2026-07-14T11:05:01.000Z",
+      type: "response_item",
+      payload: { type: "tool_search_output", id: "search-output-1" },
+    }),
+    6,
+    state,
+  );
+  assertEquals(call.event?.kind, "tool_call");
+  assertEquals(call.event?.toolName, "web_search");
+  assertEquals(output.event?.kind, "tool_result");
+});
+
+Deno.test("normalizes subagent lifecycle by stable thread identity", async () => {
+  const result = await parseCodexLine(
+    JSON.stringify({
+      timestamp: "2026-07-14T11:03:00.000Z",
+      type: "event_msg",
+      payload: {
+        type: "sub_agent_activity",
+        event_id: "activity-1",
+        agent_thread_id: "synthetic-agent-thread",
+        agent_path: "root/reviewer",
+        kind: "started",
+      },
+    }),
+    3,
+    createParserState(),
+  );
+  assertEquals(result.event?.kind, "subagent");
+  assertEquals(result.event?.subagentStatus, "started");
+  assert(result.event?.subagentRunId);
+  assert(!result.event.subagentRunId.includes("synthetic-agent-thread"));
+});
+
+Deno.test("explicitly ignores supported Codex multi-agent metadata", async () => {
+  const result = await parseCodexLine(
+    JSON.stringify({
+      timestamp: "2026-07-14T11:04:00.000Z",
+      type: "inter_agent_communication_metadata",
+      payload: { synthetic: true },
+    }),
+    4,
+    createParserState(),
+  );
+  assertEquals(result.status, "ignored");
 });
 
 Deno.test("marks malformed and unsupported lines without guessing fields", async () => {

@@ -24,8 +24,15 @@ function syntheticReport(): DailyReport {
       toolCalls: 1,
       skillCalls: 0,
       subagentCalls: 0,
+      subagentInterrupted: 0,
       activeMinutes: 12,
       tokens: { inputTokens: 100, outputTokens: 20, totalTokens: 120 },
+    },
+    usageDistributions: {
+      messagesPerSession: { sampleSize: 1, mean: 2, median: 2, p90: 2 },
+      toolCallsPerSession: { sampleSize: 1, mean: 1, median: 1, p90: 1 },
+      tokensPerSession: { sampleSize: 1, mean: 120, median: 120, p90: 120 },
+      activeMinutesPerSession: { sampleSize: 1, mean: 12, median: 12, p90: 12 },
     },
     workBlocks: [{
       id: "block-1",
@@ -98,6 +105,7 @@ Deno.test("renders data then outcomes then coaching with a strict static CSP", (
   assert(!/<form\b/i.test(html));
   assert(!/https?:\/\//i.test(html));
   assert(/footer\{[^}]*overflow-wrap:anywhere/.test(html));
+  assert(html.includes("中位 2"));
 });
 
 Deno.test("escapes every model and log derived string as text", () => {
