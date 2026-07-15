@@ -1,0 +1,19 @@
+{
+  "tasks": {
+    "aci": "deno run --allow-read --allow-write --allow-env --allow-run apps/cli/main.ts",
+    "check": "deno check apps/cli/main.ts",
+    "test": "deno test --allow-read --allow-write --allow-env --allow-run",
+    "verify": "deno fmt --check && deno lint && deno task check && deno task test"
+  },
+  "fmt": {
+    "include": ["apps/**/*.ts", "packages/**/*.ts", "tests/**/*.ts", "deno.json"],
+    "lineWidth": 100,
+    "semiColons": true,
+    "singleQuote": false
+  },
+  "lint": {
+    "rules": {
+      "tags": ["recommended"]
+    }
+  }
+}
