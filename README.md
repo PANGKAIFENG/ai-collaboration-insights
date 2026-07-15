@@ -1,70 +1,83 @@
 # AI Collaboration Insights
 
-Local-first AI collaboration analytics and review dashboard for Codex, Claude Code, OpenCode, WorkBuddy, and Qoder.
+AI Collaboration Insights (`aci`) 是一个本地优先的 Codex 协作日报生成器。它只读扫描本机 Codex session 日志，每天生成一份自包含 HTML，依次呈现使用数据与 L1-L4、工作成果、教练建议。
 
-> Status: PRD and V1 implementation roadmap approved; technical spikes and architecture decisions are next. There is no installable release yet.
+`v0.1.0` 是公开 alpha：仅支持 Codex 和日报，不包含 Claude Code、多工具、周/月报、常驻服务、动态 Dashboard 或云端上传。
 
-## Why
+## 安装
 
-AI coding activity is spread across tools and raw session logs. Token totals and session counts show usage intensity, but they do not explain what work was completed or whether the collaboration was effective, controlled, verified, and reusable.
+支持 macOS Apple Silicon 和 Intel。安装器下载固定 `v0.1.0` asset，验证 SHA-256，安装到 `~/.local/bin/aci`，并配置当前用户的 19:00 LaunchAgent；全程不使用 `sudo`。
 
-This project turns local session evidence into:
+```sh
+curl -fsSL https://github.com/PANGKAIFENG/ai-collaboration-insights/releases/download/v0.1.0/install.sh | sh
+```
 
-1. A daily, weekly, and monthly usage dashboard.
-2. A review of tasks, projects, work intervals, and outcomes.
-3. An evidence-backed collaboration score and coaching suggestions.
+二进制尚未使用 Apple Developer ID 签名或公证，macOS 首次运行可能要求用户确认。
 
-## Product Principles
+## 使用
 
-- Local-first: the structured database and reports remain on the user's machine.
-- Evidence before judgment: every inferred task, score, and risk signal links to evidence and confidence.
-- Usage is not maturity: more tokens, agents, or tools do not automatically increase the score.
-- User-controlled AI: semantic analysis uses a user-provided OpenAI-compatible or Anthropic API.
-- Correctable inference: users can rename, merge, split, exclude, and recompute.
-- No product telemetry in V1.
+```sh
+aci doctor
+aci report --no-ai --open
+aci report --date 2026-07-15 --no-ai --open
+aci consent grant
+aci consent status
+aci schedule status
+```
 
-## V1 Scope
+默认日报窗口是本地时区昨日 19:00 至今日 19:00，左闭右开。自动任务每天 19:00 运行，并在登录或恢复后补偿最近 7 个缺失窗口。重复输入保持幂等；源日志变化时生成新 revision。
 
-- macOS-first local Web application.
-- Data sources: Codex, Claude Code, OpenCode, WorkBuddy, and Qoder.
-- Daily reports: previous day 19:00 to current day 19:00.
-- Weekly reports: previous Sunday 19:00 to current Sunday 19:00.
-- Monthly reports: previous month day 1 at 19:00 to current month day 1 at 19:00.
-- Manual report generation and recomputation.
-- Markdown and JSON export.
+未授权 AI 分析时，`aci` 仍生成确定性指标、工作区间、任务、证据评分和建议。授权后会将经过大小限制和脱敏的最小分析包发送给本机已登录的 `codex exec --ephemeral`；不会接收或保存 API Key。
 
-## Documentation
+## 本地数据与隐私
 
-- [Documentation index](docs/README.md)
-- [Product requirements](docs/PRD/ai-collaboration-review-prd-v0.2.md)
-- [GitHub PRD and delivery tracking](https://github.com/PANGKAIFENG/ai-collaboration-insights/issues/1)
-- [PRD readiness review](docs/REVIEWS/prd-review-v0.1.md)
-- [Issue breakdown draft](docs/ISSUES/issue-breakdown-v0.1.md)
-- [Published issue backlog](docs/ISSUES/issue-publish-result-v0.1.md)
-- [V1 implementation roadmap](plans/ai-collaboration-insights-v1.md)
-- [Project context](docs/PROJECT/project-context.md)
-- [Development workflow](docs/PROJECT/development-workflow.md)
-- [System architecture diagram](docs/diagrams/system-architecture.drawio)
-- [Report generation flow](docs/diagrams/report-generation-flow.drawio)
-- [Deep analysis consent flow](docs/diagrams/deep-analysis-consent-flow.drawio)
+- Codex 源目录只读，不修改日志内容、权限或时间戳。
+- 报告保存在 `~/Library/Application Support/ai-collaboration-insights/reports/`。
+- HTML 不运行 JavaScript，不加载远程资源，不启动本地服务器。
+- 产品没有 telemetry、远程上传、账号系统或常驻 daemon。
+- `aci data purge` 只删除带 ownership marker 的应用派生目录，不触碰 `~/.codex` 或 Codex 登录态。
 
-## Roadmap
+撤回 AI 分析授权：
 
-The approved delivery sequence is:
+```sh
+aci consent revoke
+```
 
-1. Complete data-source spikes, scoring evaluation, architecture ADRs, and the initial quality-gate contract (#2-#6, #24).
-2. Establish the local application foundation (#7).
-3. Deliver the Codex-to-metrics-report tracer bullet without waiting for Claude Code (#8, #13, #14).
-4. Extend the verified adapter contract to Claude Code, OpenCode, WorkBuddy, and Qoder (#9-#12).
-5. Add authorized AI review, evidence-backed scoring, and the overview dashboard (#15-#17).
-6. Add confirmed deep analysis and user correction/recomputation (#18-#19).
-7. Add weekly/monthly reports, export, and local deletion (#20-#21).
-8. Pass release gates and publish the installable macOS `v0.1.0` (#24-#25).
+## 卸载
 
-## Contributing
+默认卸载删除二进制和 LaunchAgent，但保留本地报告：
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Do not submit real AI session logs, private project content, credentials, or generated personal reports.
+```sh
+curl -fsSL https://github.com/PANGKAIFENG/ai-collaboration-insights/releases/download/v0.1.0/uninstall.sh | sh
+```
+
+显式删除全部应用派生数据：
+
+```sh
+curl -fsSL https://github.com/PANGKAIFENG/ai-collaboration-insights/releases/download/v0.1.0/uninstall.sh | sh -s -- --purge-data
+```
+
+## 开发
+
+需要 Deno `2.7.1` 和 Python 3：
+
+```sh
+deno task verify
+python3 -m unittest tests/eval/test_scoring_baseline.py -v
+python3 scripts/eval_scoring_baseline.py \
+  --rubric tests/eval/scoring-baseline/rubric.v1.json \
+  --cases tests/eval/scoring-baseline/cases.v1.jsonl \
+  --predictions tests/eval/scoring-baseline/predictions.conformance.jsonl
+sh scripts/privacy_check.sh
+```
+
+产品范围、架构和实施计划：
+
+- [Codex 日报 MVP 范围](docs/PRD/codex-daily-report-mvp-scope-v0.1.md)
+- [运行时 ADR](docs/DECISIONS/ADR-0001-codex-daily-report-runtime.md)
+- [MVP 实施计划](plans/codex-daily-report-mvp-v0.1.md)
+- [贡献指南](CONTRIBUTING.md)
 
 ## License
 
-Apache-2.0. See [LICENSE](LICENSE).
+Apache-2.0，见 [LICENSE](LICENSE)。

@@ -1,0 +1,68 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  build:
+    runs-on: macos-14
+    strategy:
+      matrix:
+        target: [aarch64-apple-darwin, x86_64-apple-darwin]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.7.1
+      - name: Verify source tag version
+        run: test "v$(deno task aci version)" = "$GITHUB_REF_NAME"
+      - name: Compile
+        run: >-
+          deno compile
+          --target ${{ matrix.target }}
+          --allow-read
+          --allow-write
+          --allow-env
+          --allow-run=codex,/usr/bin/open,/bin/launchctl,/usr/bin/id
+          --output dist/aci-${{ matrix.target }}
+          apps/cli/main.ts
+      - uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: dist/aci-${{ matrix.target }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: aci-${{ matrix.target }}
+          path: dist/aci-${{ matrix.target }}
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: aci-*
+          path: dist
+          merge-multiple: true
+      - name: Create checksums
+        run: |
+          cd dist
+          sha256sum aci-aarch64-apple-darwin aci-x86_64-apple-darwin > checksums.txt
+          cp ../scripts/install.sh ../scripts/uninstall.sh .
+      - uses: softprops/action-gh-release@v2
+        with:
+          body_path: docs/RELEASES/v0.1.0.md
+          fail_on_unmatched_files: true
+          files: |
+            dist/aci-aarch64-apple-darwin
+            dist/aci-x86_64-apple-darwin
+            dist/checksums.txt
+            dist/install.sh
+            dist/uninstall.sh
