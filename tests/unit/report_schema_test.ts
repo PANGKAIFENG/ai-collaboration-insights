@@ -37,6 +37,7 @@ function report(): DailyReport {
     workBlocks: [],
     tasks: [],
     taskRelations: [],
+    evidencePackets: [],
     score: { total: null, dimensions: [] },
     maturity: { level: "unavailable", reason: "No task evidence" },
     evidence: [],

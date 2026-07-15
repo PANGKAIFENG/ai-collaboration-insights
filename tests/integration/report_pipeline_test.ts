@@ -174,6 +174,58 @@ Deno.test("enriches a deterministic report only after consent", async () => {
   }
 });
 
+Deno.test("publishes one independent evidence packet for every task across sessions", async () => {
+  const root = await Deno.makeTempDir();
+  const sourceRoot = `${root}/source`;
+  const dataDir = `${root}/data`;
+  await Deno.mkdir(sourceRoot);
+  await Deno.copyFile(sourceFixture, `${sourceRoot}/session-a.jsonl`);
+  await appendUserMessage(
+    `${sourceRoot}/session-a.jsonl`,
+    "second-task",
+    "2026-07-14T11:20:00.000Z",
+    "另外一个任务：生成发布说明",
+  );
+  await Deno.writeTextFile(
+    `${sourceRoot}/session-b.jsonl`,
+    [
+      JSON.stringify({
+        timestamp: "2026-07-14T11:02:00.000Z",
+        type: "session_meta",
+        payload: { id: "synthetic-session-b", cwd: "/synthetic/projects/beta" },
+      }),
+      JSON.stringify({
+        timestamp: "2026-07-14T11:04:00.000Z",
+        type: "response_item",
+        payload: {
+          type: "message",
+          id: "independent-task",
+          role: "user",
+          content: [{ type: "input_text", text: "Review an independent parser" }],
+        },
+      }),
+    ].join("\n") + "\n",
+  );
+  try {
+    const result = await generateDailyReport({
+      date: "2026-07-15",
+      timeZone: "Asia/Shanghai",
+      sourceRoot,
+      dataDir,
+      noAi: true,
+      generationReason: "manual",
+    });
+    assert(result.report.tasks.length >= 3);
+    assertEquals(result.report.evidencePackets.length, result.report.tasks.length);
+    assertEquals(
+      result.report.evidencePackets.map((packet) => packet.taskId).sort(),
+      result.report.tasks.map((task) => task.id).sort(),
+    );
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
 async function exists(path: string): Promise<boolean> {
   try {
     await Deno.stat(path);
@@ -196,6 +248,30 @@ async function appendMessage(path: string, id: string, timestamp: string): Promi
           id,
           role: "assistant",
           content: [{ type: "output_text", text: "Synthetic late result" }],
+        },
+      })
+    }\n`,
+    { append: true },
+  );
+}
+
+async function appendUserMessage(
+  path: string,
+  id: string,
+  timestamp: string,
+  text: string,
+): Promise<void> {
+  await Deno.writeTextFile(
+    path,
+    `${
+      JSON.stringify({
+        timestamp,
+        type: "response_item",
+        payload: {
+          type: "message",
+          id,
+          role: "user",
+          content: [{ type: "input_text", text }],
         },
       })
     }\n`,

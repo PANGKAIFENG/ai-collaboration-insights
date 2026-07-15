@@ -80,6 +80,69 @@ export interface WorkBlock {
   eventIds: string[];
 }
 
+export type SemanticRoundTrigger =
+  | "intent"
+  | "user_feedback"
+  | "verification_feedback"
+  | "approach_change"
+  | "continuation";
+
+export interface SemanticRound {
+  id: string;
+  taskId: string;
+  sequence: number;
+  start: string;
+  end: string;
+  trigger: SemanticRoundTrigger;
+  status: "baseline" | "effective" | "ineffective" | "pending";
+  eventIds: string[];
+  intentEventIds: string[];
+  attemptEventIds: string[];
+  feedbackEventIds: string[];
+  adjustmentEventIds: string[];
+  resultEventIds: string[];
+  lifecycleEventIds: string[];
+  loopReason?: "repeated_action_or_feedback";
+}
+
+export type EvidenceCategory =
+  | "intent"
+  | "outcome"
+  | "verification"
+  | "asset"
+  | "delegation"
+  | "feedback"
+  | "attempt";
+
+export interface EvidencePacketAnchor {
+  eventId: string;
+  category: EvidenceCategory;
+  timestamp: string;
+  kind: EventKind;
+  text?: string;
+}
+
+export interface TaskEvidencePacket {
+  schemaVersion: "1";
+  taskId: string;
+  anchors: EvidencePacketAnchor[];
+  rounds: SemanticRound[];
+  coverage: {
+    requiredCategories: EvidenceCategory[];
+    presentCategories: EvidenceCategory[];
+    missingCategories: EvidenceCategory[];
+    categoryRatio: number;
+    totalAnchors: number;
+    includedAnchors: number;
+    omittedAnchors: number;
+    totalRounds: number;
+    includedRounds: number;
+    omittedRounds: number;
+    omittedRoundEventRefs: number;
+    truncated: boolean;
+  };
+}
+
 export interface TaskSummary {
   id: string;
   name: string;
@@ -94,6 +157,9 @@ export interface TaskSummary {
   evidenceIds: string[];
   sourceSessionIds: string[];
   relationIds: string[];
+  semanticRoundCount: number;
+  effectiveRoundCount: number;
+  keyRounds: SemanticRound[];
   hasIteration: boolean;
   hasVerification: boolean;
   hasReusableAsset: boolean;
@@ -154,6 +220,7 @@ export interface DailyReport {
   workBlocks: WorkBlock[];
   tasks: TaskSummary[];
   taskRelations: TaskRelation[];
+  evidencePackets: TaskEvidencePacket[];
   score: { total: number | null; dimensions: ScoreDimension[] };
   maturity: { level: "L1" | "L2" | "L3" | "L4" | "unavailable"; reason: string };
   evidence: Evidence[];
