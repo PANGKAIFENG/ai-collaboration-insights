@@ -1,0 +1,222 @@
+{
+  "contractVersion": "scoring-baseline/v1",
+  "dataset": {
+    "caseCount": 100,
+    "casesPerTool": 20,
+    "sourceTools": [
+      "codex",
+      "claude-code",
+      "opencode",
+      "workbuddy",
+      "qoder"
+    ],
+    "source": "synthetic"
+  },
+  "availabilityStates": [
+    "present",
+    "observed_absent",
+    "unavailable"
+  ],
+  "recordContract": {
+    "goldRequiredFields": [
+      "caseId",
+      "sourceTool",
+      "evidenceWindow",
+      "taskBoundary",
+      "project",
+      "acceptedTaskNames",
+      "deliverable",
+      "verificationStatus",
+      "complexity",
+      "dimensionScores",
+      "evidenceGates",
+      "riskLabels",
+      "confidence",
+      "availability",
+      "testTags"
+    ],
+    "predictionRequiredFields": [
+      "caseId",
+      "taskBoundary",
+      "project",
+      "taskName",
+      "deliverable",
+      "verificationStatus",
+      "complexity",
+      "dimensionScores",
+      "evidenceGates",
+      "riskLabels",
+      "confidence",
+      "availability"
+    ],
+    "deliverableMeaning": "task_output_not_necessarily_reusable",
+    "reusableAssetRequires": "asset_evidence_gate_present",
+    "fieldShapes": {
+      "evidenceWindow": {
+        "exactKeys": [
+          "day",
+          "start",
+          "end"
+        ],
+        "dayFormat": "YYYY-MM-DD",
+        "startEndFormat": "RFC3339",
+        "constraint": "start_before_end"
+      },
+      "taskBoundary": {
+        "exactKeys": [
+          "segmentIds"
+        ],
+        "segmentIds": "non_empty_unique_non_empty_string_array",
+        "sameShapeForGoldAndPrediction": true
+      },
+      "dimensionScores": {
+        "exactKeysFrom": "dimensions",
+        "value": "number_0_to_100_or_null"
+      },
+      "availability": {
+        "requiredFor": [
+          "gold",
+          "prediction"
+        ],
+        "exactKeysFrom": "dimensions",
+        "valuesFrom": "availabilityStates",
+        "nullExactlyWhen": "same_dimension_is_unavailable",
+        "numericWhen": [
+          "present",
+          "observed_absent"
+        ]
+      },
+      "evidenceGates": {
+        "exactKeys": [
+          "iteration",
+          "verification",
+          "asset"
+        ],
+        "valuesFrom": "availabilityStates",
+        "countsAsEvidence": "present_only"
+      },
+      "verificationStatus": {
+        "enum": [
+          "verified",
+          "unverified",
+          "unavailable"
+        ]
+      },
+      "syntheticStrings": {
+        "nonEmptyFields": [
+          "project",
+          "deliverable",
+          "taskName"
+        ]
+      },
+      "acceptedTaskNames": "non_empty_unique_non_empty_string_array",
+      "confidence": "number_0_to_1",
+      "riskLabels": "unique_string_array",
+      "testTags": "string_array",
+      "usageContext": {
+        "required": false,
+        "allowedKeysFrom": "prohibitedScoringInputs",
+        "affectsComplexityOrScore": false
+      }
+    }
+  },
+  "dimensions": {
+    "taskDefinition": 20,
+    "collaborationOrchestration": 20,
+    "iterationDepth": 20,
+    "verificationClosure": 25,
+    "assetCreation": 15
+  },
+  "complexityWeights": [
+    1,
+    2,
+    3
+  ],
+  "aggregation": {
+    "taskUnavailableDimensionResult": null,
+    "taskScore": "sum(dimensionScore * dimensionWeight / 100)_when_all_dimensions_available",
+    "dayScore": "complexity_weighted_mean_of_valid_tasks",
+    "dayWithoutValidTasksResult": null,
+    "rolling28DayScore": "equal_mean_of_valid_active_day_scores",
+    "minimumActiveDaysForMaturity": 3,
+    "decimal": {
+      "mode": "ROUND_HALF_UP",
+      "places": 2,
+      "roundAtOutputOf": [
+        "taskScore",
+        "dayScore",
+        "rolling28DayScore"
+      ],
+      "nextLayerUsesNormalizedLowerLayer": true,
+      "exactMatchUsesNormalizedValues": true
+    }
+  },
+  "maturity": {
+    "assignment": {
+      "scoreBandCandidate": "highest_level_whose_scoreFloor_is_met",
+      "evaluationDirection": "from_candidate_downward",
+      "fallbackIgnoresScoreBandCeiling": true,
+      "result": "first_level_whose_evidence_gate_passes"
+    },
+    "insufficientActiveDaysResult": null,
+    "L1": {
+      "scoreFloor": 0,
+      "scoreBandCeiling": 39.99,
+      "evidenceGate": "none"
+    },
+    "L2": {
+      "scoreFloor": 40,
+      "scoreBandCeiling": 59.99,
+      "evidenceGate": "none"
+    },
+    "L3": {
+      "scoreFloor": 60,
+      "scoreBandCeiling": 79.99,
+      "minimumIteratedAndVerifiedTasks": 3
+    },
+    "L4": {
+      "scoreFloor": 80,
+      "scoreBandCeiling": 100,
+      "minimumIteratedAndVerifiedTasks": 5,
+      "minimumReusableAssetTasks": 2
+    }
+  },
+  "qualityGates": {
+    "jointTaskNameProjectConsistency": {
+      "taskNameMatch": "prediction_taskName_in_gold_acceptedTaskNames",
+      "projectMatch": "exact",
+      "caseSensitive": true,
+      "overallMinimum": 0.8,
+      "perToolMinimum": 0.7
+    },
+    "boundaryF1": {
+      "report": true,
+      "includedInJointConsistency": false,
+      "unit": "segmentIds_set_per_case",
+      "aggregation": "micro_over_all_cases",
+      "formula": "2TP/(2TP+FP+FN)",
+      "zeroDenominatorResult": 1.0
+    },
+    "aggregationExactMatch": true,
+    "maturityExactMatch": true,
+    "usageOnlyRiskNegativeGate": {
+      "goldTestTag": "usage_only_risk_negative",
+      "predictionRiskLabelsMustEqual": [],
+      "predictionComplexityMustMatchGold": true,
+      "predictionDimensionScoresMustMatchGold": true
+    }
+  },
+  "prohibitedScoringInputs": [
+    "tokenCount",
+    "duration",
+    "sessionCount",
+    "toolCallCount",
+    "skillCount",
+    "subagentCount"
+  ],
+  "policy": {
+    "workbuddy": "unsupported/policy_restriction",
+    "qoder": "unsupported/policy_restriction",
+    "syntheticEvidenceDoesNotChangeAdapterStatus": true
+  }
+}

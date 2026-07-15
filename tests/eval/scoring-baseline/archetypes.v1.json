@@ -1,0 +1,349 @@
+{
+  "contractVersion": "scoring-baseline-archetypes/v1",
+  "metadata": {
+    "source": "synthetic",
+    "sourceNeutral": true,
+    "archetypeCount": 20,
+    "expandsAcrossSourceTools": [
+      "codex",
+      "claude-code",
+      "opencode",
+      "workbuddy",
+      "qoder"
+    ],
+    "dayRange": {
+      "minimum": 3,
+      "maximum": 10,
+      "fixtureDays": 5
+    },
+    "adapterPolicy": {
+      "workbuddy": "unsupported/policy_restriction",
+      "qoder": "unsupported/policy_restriction",
+      "note": "Synthetic unified evidence does not authorize adapter reads or change adapter status."
+    },
+    "usagePolicy": {
+      "allowedContextKeys": [
+        "tokenCount",
+        "duration",
+        "sessionCount",
+        "toolCallCount",
+        "skillCount",
+        "subagentCount"
+      ],
+      "affectsComplexityOrScore": false,
+      "creditsAreTokens": false,
+      "note": "Credits are not Token and are not represented as tokenCount."
+    }
+  },
+  "recordTemplates": {
+    "sourceSubstitution": "Each archetype is expanded once per source tool with synthetic-only segment, project, task, and deliverable identifiers.",
+    "goldRequired": [
+      "caseId",
+      "sourceTool",
+      "evidenceWindow",
+      "taskBoundary",
+      "project",
+      "acceptedTaskNames",
+      "deliverable",
+      "verificationStatus",
+      "complexity",
+      "dimensionScores",
+      "evidenceGates",
+      "riskLabels",
+      "confidence",
+      "availability",
+      "testTags"
+    ],
+    "predictionCandidateOnly": [
+      "caseId",
+      "taskBoundary",
+      "project",
+      "taskName",
+      "deliverable",
+      "verificationStatus",
+      "complexity",
+      "dimensionScores",
+      "evidenceGates",
+      "riskLabels",
+      "confidence",
+      "availability"
+    ],
+    "predictionForbiddenGoldFields": [
+      "sourceTool",
+      "evidenceWindow",
+      "acceptedTaskNames",
+      "testTags"
+    ],
+    "optionalUsageContext": "Only rubric prohibitedScoringInputs keys; never affects complexity, dimensions, aggregation, maturity, or risk by itself."
+  },
+  "archetypes": [
+    {
+      "archetypeId": "a01-active-gap-5m-inclusive",
+      "nameZh": "5分钟同段",
+      "nameEn": "Five-minute same segment",
+      "intent": "相邻 synthetic events 恰好间隔 5 分钟时保留在同一 active segment。",
+      "coverage": [
+        "active_segment_boundary",
+        "gap_equals_5m",
+        "inclusive_threshold"
+      ],
+      "goldTemplateNote": "Gold boundary includes both adjacent event segments at the inclusive 5-minute threshold.",
+      "predictionTemplateNote": "Candidate boundary, project, task name, scores, and gates exactly reproduce the source-neutral gold decision."
+    },
+    {
+      "archetypeId": "a02-active-gap-over-5m-split",
+      "nameZh": "超过5分钟拆段",
+      "nameEn": "Over-five-minute split",
+      "intent": "相邻 synthetic events 间隔 5 分 1 秒时拆成独立 active segments。",
+      "coverage": [
+        "active_segment_boundary",
+        "gap_over_5m",
+        "split"
+      ],
+      "goldTemplateNote": "Gold boundary contains only the first segment; the later segment is excluded because the gap exceeds five minutes.",
+      "predictionTemplateNote": "Candidate preserves the split and does not add the excluded segment."
+    },
+    {
+      "archetypeId": "a03-task-gap-20m-inclusive-merge",
+      "nameZh": "20分钟同任务合并",
+      "nameEn": "Twenty-minute task merge",
+      "intent": "同一 synthetic project 与 task 的相邻 active segments 恰好间隔 20 分钟时合并。",
+      "coverage": [
+        "task_group_boundary",
+        "gap_equals_20m",
+        "same_project",
+        "merge"
+      ],
+      "goldTemplateNote": "Gold task group includes both active segments at the inclusive 20-minute threshold.",
+      "predictionTemplateNote": "Candidate merges the same two segments into one task group."
+    },
+    {
+      "archetypeId": "a04-task-gap-over-20m-separate",
+      "nameZh": "超过20分钟分离",
+      "nameEn": "Over-twenty-minute separation",
+      "intent": "同一 synthetic project 中相邻 active segments 间隔 20 分 1 秒时保持独立。",
+      "coverage": [
+        "task_group_boundary",
+        "gap_over_20m",
+        "separate"
+      ],
+      "goldTemplateNote": "Gold task group excludes the later active segment because the task gap exceeds twenty minutes.",
+      "predictionTemplateNote": "Candidate keeps the task group separate."
+    },
+    {
+      "archetypeId": "a05-cross-project-isolation",
+      "nameZh": "跨项目隔离",
+      "nameEn": "Cross-project isolation",
+      "intent": "即使时间相邻且任务措辞相似，不同 synthetic projects 也不得合并。",
+      "coverage": [
+        "project_boundary",
+        "cross_project",
+        "isolation"
+      ],
+      "goldTemplateNote": "Gold includes only the segment owned by the selected synthetic project.",
+      "predictionTemplateNote": "Candidate keeps exact project ownership and excludes the adjacent other-project segment."
+    },
+    {
+      "archetypeId": "a06-parallel-subagent-nonadditive",
+      "nameZh": "合理并行子Agent",
+      "nameEn": "Reasonable parallel subagent",
+      "intent": "并行 synthetic subagent 分支属于同一 task group，耗时不相加且不因数量自动扣分。",
+      "coverage": [
+        "parallel_subagent",
+        "non_additive_duration",
+        "reasonable_orchestration"
+      ],
+      "goldTemplateNote": "Gold boundary includes parent and two parallel child segments; complexity follows scope, not usage counts.",
+      "predictionTemplateNote": "Candidate preserves one group, the same complexity, and no usage-only risk."
+    },
+    {
+      "archetypeId": "a07-complexity-1-anchor",
+      "nameZh": "复杂度1锚点",
+      "nameEn": "Complexity one anchor",
+      "intent": "单目标、低约束、单一 synthetic deliverable 标注复杂度 1。",
+      "coverage": [
+        "complexity",
+        "complexity_1",
+        "scope_anchor"
+      ],
+      "goldTemplateNote": "Gold complexity is 1 based only on the compact goal and delivery scope.",
+      "predictionTemplateNote": "Candidate returns complexity 1 regardless of elapsed time or usage."
+    },
+    {
+      "archetypeId": "a08-complexity-2-anchor",
+      "nameZh": "复杂度2锚点",
+      "nameEn": "Complexity two anchor",
+      "intent": "多约束、单一阶段性交付的 synthetic task 标注复杂度 2。",
+      "coverage": [
+        "complexity",
+        "complexity_2",
+        "scope_anchor"
+      ],
+      "goldTemplateNote": "Gold complexity is 2 based on moderate constraints and deliverable scope.",
+      "predictionTemplateNote": "Candidate returns complexity 2 with source-neutral scores."
+    },
+    {
+      "archetypeId": "a09-complexity-3-anchor",
+      "nameZh": "复杂度3锚点",
+      "nameEn": "Complexity three anchor",
+      "intent": "多阶段、多约束、需协调验证的 synthetic task 标注复杂度 3。",
+      "coverage": [
+        "complexity",
+        "complexity_3",
+        "scope_anchor"
+      ],
+      "goldTemplateNote": "Gold complexity is 3 because of goal, constraint, and deliverable breadth.",
+      "predictionTemplateNote": "Candidate returns complexity 3 without consulting token, duration, or tool counts."
+    },
+    {
+      "archetypeId": "a10-five-dimension-high-anchor",
+      "nameZh": "五维高分锚点",
+      "nameEn": "Five-dimension high anchor",
+      "intent": "五维均有充分 synthetic evidence，形成稳定高分锚点。",
+      "coverage": [
+        "dimension_anchor",
+        "high_scores",
+        "all_five_dimensions"
+      ],
+      "goldTemplateNote": "Gold supplies high numeric anchors for all five available dimensions.",
+      "predictionTemplateNote": "Candidate exactly reproduces all five high anchors and evidence gates."
+    },
+    {
+      "archetypeId": "a11-five-dimension-low-anchor",
+      "nameZh": "五维低分锚点",
+      "nameEn": "Five-dimension low anchor",
+      "intent": "五维均观察到不足证据，形成稳定低分而非 unavailable 锚点。",
+      "coverage": [
+        "dimension_anchor",
+        "low_scores",
+        "observed_absent_not_unavailable"
+      ],
+      "goldTemplateNote": "Gold uses numeric low scores because evidence was observed and found weak, not unavailable.",
+      "predictionTemplateNote": "Candidate keeps low numeric values distinct from null."
+    },
+    {
+      "archetypeId": "a12-unavailable-dimension-null-task",
+      "nameZh": "不可用维度空任务分",
+      "nameEn": "Unavailable dimension null task",
+      "intent": "任一维度 unavailable 时该维度为 null，task score 也为 null，不补零或重归一化。",
+      "coverage": [
+        "availability",
+        "unavailable_dimension",
+        "null_task_score",
+        "aggregation"
+      ],
+      "goldTemplateNote": "Gold has one unavailable dimension and therefore a null task score.",
+      "predictionTemplateNote": "Candidate preserves the null and availability state so conformance aggregation remains exact."
+    },
+    {
+      "archetypeId": "a13-l3-evidence-satisfied",
+      "nameZh": "L3证据满足",
+      "nameEn": "L3 evidence satisfied",
+      "intent": "60-79 分档的 synthetic task 同时具备迭代与验证证据，可计入 L3 gate。",
+      "coverage": [
+        "maturity",
+        "L3",
+        "iteration_evidence",
+        "verification_evidence"
+      ],
+      "goldTemplateNote": "Gold marks both iteration and verification as present for L3 evidence counting.",
+      "predictionTemplateNote": "Candidate preserves the two evidence gates and L3-band score profile."
+    },
+    {
+      "archetypeId": "a14-l4-evidence-satisfied",
+      "nameZh": "L4证据满足",
+      "nameEn": "L4 evidence satisfied",
+      "intent": "80+ 分档且具备迭代、验证和可复用资产证据，可计入 L4 gates。",
+      "coverage": [
+        "maturity",
+        "L4",
+        "iteration_evidence",
+        "verification_evidence",
+        "asset_evidence"
+      ],
+      "goldTemplateNote": "Gold marks iteration, verification, and reusable asset evidence present.",
+      "predictionTemplateNote": "Candidate preserves the L4 score profile and all required evidence gates."
+    },
+    {
+      "archetypeId": "a15-l4-missing-asset-downgrade",
+      "nameZh": "L4缺资产降级",
+      "nameEn": "L4 missing-asset downgrade",
+      "intent": "80+ 分但 asset evidence observed_absent 时不能仅凭 deliverable 达到 L4，应逐级降到 L3。",
+      "coverage": [
+        "maturity",
+        "L4_downgrade",
+        "asset_gate",
+        "deliverable_not_asset"
+      ],
+      "goldTemplateNote": "Gold has an ordinary deliverable but no reusable asset evidence, imposing an L3 ceiling.",
+      "predictionTemplateNote": "Candidate does not infer asset evidence from deliverable existence."
+    },
+    {
+      "archetypeId": "a16-ineffective-iteration-loop",
+      "nameZh": "无效循环",
+      "nameEn": "Ineffective iteration loop",
+      "intent": "重复改写但目标与结果无改善，标记无效迭代循环风险。",
+      "coverage": [
+        "risk",
+        "ineffective_iteration_loop",
+        "iteration_quality"
+      ],
+      "goldTemplateNote": "Gold risk is supported by synthetic behavior evidence, not by duration or token volume.",
+      "predictionTemplateNote": "Candidate emits the same behavior-based risk and low iteration anchor."
+    },
+    {
+      "archetypeId": "a17-repeated-failure",
+      "nameZh": "重复失败",
+      "nameEn": "Repeated failure",
+      "intent": "同一失败在无策略变化下反复出现，标记 repeated failure 风险。",
+      "coverage": [
+        "risk",
+        "repeated_failure",
+        "strategy_change_absent"
+      ],
+      "goldTemplateNote": "Gold risk is based on repeated synthetic failures without a changed strategy.",
+      "predictionTemplateNote": "Candidate preserves the failure risk and unverified status."
+    },
+    {
+      "archetypeId": "a18-over-orchestration",
+      "nameZh": "过度编排",
+      "nameEn": "Over orchestration",
+      "intent": "任务范围简单但流程拆解和协调成本明显超出需要，标记过度编排风险。",
+      "coverage": [
+        "risk",
+        "over_orchestration",
+        "scope_mismatch"
+      ],
+      "goldTemplateNote": "Gold risk follows synthetic scope-to-orchestration mismatch; counts are contextual only.",
+      "predictionTemplateNote": "Candidate keeps complexity 1 and behavior-based orchestration risk without scoring usage."
+    },
+    {
+      "archetypeId": "a19-unverified-completion",
+      "nameZh": "未验证完成",
+      "nameEn": "Unverified completion",
+      "intent": "声称完成但缺少结果核验，标记未验证完成风险并压低 verification closure。",
+      "coverage": [
+        "risk",
+        "unverified_completion",
+        "verification_closure"
+      ],
+      "goldTemplateNote": "Gold completion remains unverified because no synthetic verification evidence exists.",
+      "predictionTemplateNote": "Candidate emits unverified status, matching risk, and low verification score."
+    },
+    {
+      "archetypeId": "a20-usage-only-high-quality-negative",
+      "nameZh": "高用量高质量无风险",
+      "nameEn": "High-usage high-quality negative",
+      "intent": "高 Token、长时长及高调用量伴随高质量验证结果时，不得仅因用量触发风险或改变复杂度/得分。",
+      "coverage": [
+        "usage_only_risk_negative",
+        "high_token",
+        "long_duration",
+        "high_quality",
+        "no_risk"
+      ],
+      "goldTemplateNote": "Gold supplies prohibited usage inputs only as context; high quality and verified output carry no risk.",
+      "predictionTemplateNote": "Candidate retains empty risk labels and unchanged complexity/scores despite high usage."
+    }
+  ]
+}
