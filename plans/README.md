@@ -18,4 +18,5 @@
 
 ## 当前计划
 
-- [AI Collaboration Insights V1](ai-collaboration-insights-v1.md)
+- [Codex 日报 MVP v0.1.0 路线图](ai-collaboration-insights-v1.md)
+- [Codex 日报 MVP v0.1 实施计划](codex-daily-report-mvp-v0.1.md)
