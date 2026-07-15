@@ -47,6 +47,36 @@ Deno.test("filters system scaffolding before selecting a task title", () => {
   assert(!result.tasks[0].eventIds.includes("env"));
 });
 
+Deno.test("does not publish an orphan session without a real user goal", () => {
+  const result = reconstructTaskBoundaries([
+    event("child-result", "session-orphan", "2026-07-14T11:00:00.000Z", "message", {
+      role: "assistant",
+      contentPreview: "评审发现一个边界问题",
+    }),
+    event("child-tool", "session-orphan", "2026-07-14T11:01:00.000Z", "tool_call", {
+      toolName: "read",
+    }),
+  ], window);
+  assertEquals(result.tasks, []);
+  assertEquals(result.relations, []);
+});
+
+Deno.test("drops weak relations to an unlinked orphan session", () => {
+  const result = reconstructTaskBoundaries([
+    event("goal", "session-parent", "2026-07-14T11:00:00.000Z", "message", {
+      role: "user",
+      contentPreview: "评审实现方案",
+    }),
+    event("orphan-result", "session-orphan", "2026-07-14T11:02:00.000Z", "message", {
+      role: "assistant",
+      contentPreview: "未关联的后台评审结果",
+    }),
+  ], window);
+  assertEquals(result.tasks.length, 1);
+  assertEquals(result.tasks[0].name, "评审实现方案");
+  assertEquals(result.relations, []);
+});
+
 Deno.test("splits a clear goal transition inside one session", () => {
   const result = reconstructTaskBoundaries([
     event("goal-a", "session-a", "2026-07-14T11:00:00.000Z", "message", {

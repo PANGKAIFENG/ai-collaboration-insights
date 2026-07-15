@@ -13,10 +13,11 @@
 9. Pull request review and required checks.
 10. Release notes, tagged release, and installation verification.
 
-`v0.1.0` has completed this sequence. Current work starts from public-alpha
-evidence: validate the installed report, file observed defects, and deliver
-small fixes through the same Issue, branch, pull-request, and verification
-path. Scope expansion requires a new product decision before implementation.
+`v0.2.0` has completed this sequence for the progressive-analysis release.
+Current work starts from public-alpha evidence: validate the installed report,
+file observed defects, and deliver small fixes through the same Issue, branch,
+pull-request, and verification path. Scope expansion requires a new product
+decision before implementation.
 
 ## Branch Model
 

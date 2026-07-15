@@ -2,14 +2,14 @@
 
 AI Collaboration Insights (`aci`) 是一个本地优先的 Codex 协作日报生成器。它只读扫描本机 Codex session 日志，每天生成一份自包含 HTML，依次呈现使用数据与 L1-L4、工作成果、教练建议。
 
-`v0.1.0` 是公开 alpha：仅支持 Codex 和日报，不包含 Claude Code、多工具、周/月报、常驻服务、动态 Dashboard 或云端上传。
+`v0.2.0` 是公开 alpha：仅支持 Codex 和日报，不包含 Claude Code、多工具、周/月报、常驻服务、动态 Dashboard 或云端上传。
 
 ## 安装
 
-支持 macOS Apple Silicon 和 Intel。安装器下载固定 `v0.1.0` asset，验证 SHA-256，安装到 `~/.local/bin/aci`，并配置当前用户的 19:00 LaunchAgent；全程不使用 `sudo`。
+支持 macOS Apple Silicon 和 Intel。安装器下载固定 `v0.2.0` asset，验证 SHA-256，安装到 `~/.local/bin/aci`，并配置当前用户的 19:00 LaunchAgent；全程不使用 `sudo`。
 
 ```sh
-curl -fsSL https://github.com/PANGKAIFENG/ai-collaboration-insights/releases/download/v0.1.0/install.sh | sh
+curl -fsSL https://github.com/PANGKAIFENG/ai-collaboration-insights/releases/download/v0.2.0/install.sh | sh
 ```
 
 二进制尚未使用 Apple Developer ID 签名或公证，macOS 首次运行可能要求用户确认。
@@ -48,13 +48,13 @@ aci consent revoke
 默认卸载删除二进制和 LaunchAgent，但保留本地报告：
 
 ```sh
-curl -fsSL https://github.com/PANGKAIFENG/ai-collaboration-insights/releases/download/v0.1.0/uninstall.sh | sh
+curl -fsSL https://github.com/PANGKAIFENG/ai-collaboration-insights/releases/download/v0.2.0/uninstall.sh | sh
 ```
 
 显式删除全部应用派生数据：
 
 ```sh
-curl -fsSL https://github.com/PANGKAIFENG/ai-collaboration-insights/releases/download/v0.1.0/uninstall.sh | sh -s -- --purge-data
+curl -fsSL https://github.com/PANGKAIFENG/ai-collaboration-insights/releases/download/v0.2.0/uninstall.sh | sh -s -- --purge-data
 ```
 
 ## 开发
@@ -68,14 +68,20 @@ python3 scripts/eval_scoring_baseline.py \
   --rubric tests/eval/scoring-baseline/rubric.v1.json \
   --cases tests/eval/scoring-baseline/cases.v1.jsonl \
   --predictions tests/eval/scoring-baseline/predictions.conformance.jsonl
+python3 -m unittest tests/eval/test_progressive_analysis.py -v
+python3 scripts/eval_progressive_analysis.py \
+  --gold tests/eval/progressive-analysis/gold.synthetic.v1.jsonl \
+  --predictions tests/eval/progressive-analysis/predictions.conformance.v1.jsonl \
+  --share-safe
 sh scripts/privacy_check.sh
 ```
 
 产品范围、架构和实施计划：
 
 - [Codex 日报 MVP 范围](docs/PRD/codex-daily-report-mvp-scope-v0.1.md)
+- [渐进分析 PRD](docs/PRD/ai-collaboration-review-prd-v0.3.md)
 - [运行时 ADR](docs/DECISIONS/ADR-0001-codex-daily-report-runtime.md)
-- [MVP 实施计划](plans/codex-daily-report-mvp-v0.1.md)
+- [v0.2 实施计划](plans/codex-progressive-analysis-v0.2.md)
 - [贡献指南](CONTRIBUTING.md)
 
 ## License

@@ -2,10 +2,10 @@
 
 ## Current Snapshot
 
-`v0.1.0` is released as a Codex-only daily-report public alpha. Production code,
-automated tests, release automation, install/uninstall scripts, and verification
-evidence are present. The repository is now validating the installed product
-with real Codex usage while keeping personal logs and reports outside Git.
+`v0.2.0` is the current Codex-only daily-report public alpha. Production code,
+progressive-analysis evaluation, release automation, install/uninstall scripts,
+and verification evidence are present. The repository validates the installed
+product with real Codex usage while keeping personal logs and reports outside Git.
 
 ## Stable Top-Level Map
 
