@@ -82,6 +82,7 @@ function syntheticReport(): DailyReport {
       eventIds: ["event-1"],
       confidence: 0.8,
     }],
+    sessionInsights: [],
     coachSuggestions: [{
       issue: "缺少验证",
       evidenceId: "evidence-1",

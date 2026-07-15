@@ -192,6 +192,14 @@ export interface CoachSuggestion {
   verification: string;
 }
 
+export interface SessionInsight {
+  sessionRef: string;
+  direction: string;
+  conclusion: string;
+  evidenceIds: string[];
+  confidence: number;
+}
+
 export interface DailyReport {
   schemaVersion: typeof REPORT_SCHEMA_VERSION;
   reportId: string;
@@ -224,11 +232,17 @@ export interface DailyReport {
   score: { total: number | null; dimensions: ScoreDimension[] };
   maturity: { level: "L1" | "L2" | "L3" | "L4" | "unavailable"; reason: string };
   evidence: Evidence[];
+  sessionInsights: SessionInsight[];
   coachSuggestions: CoachSuggestion[];
   analysisStatus: {
     mode: "deterministic" | "ai_enriched";
-    status: "complete" | "not_consented" | "disabled" | "degraded";
+    status: "complete" | "partial" | "not_consented" | "disabled" | "degraded";
     reason?: string;
+    coverage?: {
+      totalTasks: number;
+      analyzedTasks: number;
+      detailTasks: number;
+    };
   };
   provenance: {
     appVersion: string;

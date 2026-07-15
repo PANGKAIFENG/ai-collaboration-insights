@@ -35,6 +35,8 @@ export function validateDailyReport(value: unknown): DailyReport {
   ) {
     throw new Error("report collections must be arrays");
   }
+  if (report.sessionInsights === undefined) report.sessionInsights = [];
+  if (!Array.isArray(report.sessionInsights)) throw new Error("sessionInsights must be an array");
   if (!Array.isArray(report.coachSuggestions)) throw new Error("coachSuggestions must be an array");
   if (report.coachSuggestions.length > 3) {
     throw new Error("report supports at most 3 coach suggestions");
@@ -42,6 +44,16 @@ export function validateDailyReport(value: unknown): DailyReport {
   const analysis = object(report.analysisStatus);
   if (!analysis || !["deterministic", "ai_enriched"].includes(String(analysis.mode))) {
     throw new Error("invalid analysisStatus");
+  }
+  if (analysis.coverage !== undefined) {
+    const coverage = object(analysis.coverage);
+    if (
+      !coverage || !Number.isInteger(coverage.totalTasks) ||
+      !Number.isInteger(coverage.analyzedTasks) || !Number.isInteger(coverage.detailTasks) ||
+      Number(coverage.totalTasks) < 0 || Number(coverage.analyzedTasks) < 0 ||
+      Number(coverage.detailTasks) < 0 ||
+      Number(coverage.analyzedTasks) > Number(coverage.totalTasks)
+    ) throw new Error("invalid analysis coverage");
   }
   return value as DailyReport;
 }

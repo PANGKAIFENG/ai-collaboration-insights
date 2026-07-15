@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "additionalProperties": false,
-  "required": ["tasks", "suggestions"],
+  "required": ["tasks", "insights", "suggestions"],
   "properties": {
     "tasks": {
       "type": "array",
@@ -10,12 +10,50 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "name", "outcome", "verificationStatus", "confidence"],
+        "required": [
+          "id",
+          "name",
+          "outcome",
+          "verificationStatus",
+          "confidence",
+          "evidenceIds",
+          "needsDetail",
+          "conflict"
+        ],
         "properties": {
           "id": { "type": "string", "maxLength": 100 },
           "name": { "type": "string", "maxLength": 120 },
           "outcome": { "type": "string", "maxLength": 240 },
           "verificationStatus": { "enum": ["verified", "attempted", "not_observed"] },
+          "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+          "evidenceIds": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 20,
+            "items": { "type": "string", "maxLength": 100 }
+          },
+          "needsDetail": { "type": "boolean" },
+          "conflict": { "type": "boolean" }
+        }
+      }
+    },
+    "insights": {
+      "type": "array",
+      "maxItems": 200,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["sessionRef", "direction", "conclusion", "evidenceIds", "confidence"],
+        "properties": {
+          "sessionRef": { "type": "string", "maxLength": 100 },
+          "direction": { "type": "string", "maxLength": 80 },
+          "conclusion": { "type": "string", "maxLength": 240 },
+          "evidenceIds": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 12,
+            "items": { "type": "string", "maxLength": 100 }
+          },
           "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
         }
       }
