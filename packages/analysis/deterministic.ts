@@ -1,6 +1,7 @@
 import type {
   Evidence,
   ReportWindow,
+  TaskRelation,
   TaskSummary,
   UnifiedEvent,
   Usage,
@@ -9,6 +10,7 @@ import type {
 } from "../core/types.ts";
 import { scoreCollaboration } from "./scoring.ts";
 import { buildSessionFacts } from "./facts.ts";
+import { reconstructTaskBoundaries } from "./tasks.ts";
 
 const ACTIVE_SEGMENT_MS = 5 * 60 * 1000;
 const MERGE_GAP_MS = 20 * 60 * 1000;
@@ -33,6 +35,7 @@ export interface DeterministicAnalysis {
   usageDistributions: UsageDistributions;
   workBlocks: WorkBlock[];
   tasks: TaskSummary[];
+  taskRelations: TaskRelation[];
   evidence: Evidence[];
   score: ReturnType<typeof scoreCollaboration>;
 }
@@ -198,6 +201,8 @@ function blockProjection(
       verification: hasVerification ? "verified" : "not_observed",
       confidence: users.length > 0 ? 0.75 : 0.45,
       evidenceIds: taskEvidence.map((item) => item.id),
+      sourceSessionIds: [...new Set(block.events.map((event) => event.sourceSessionId))].sort(),
+      relationIds: [],
       hasIteration,
       hasVerification,
       hasReusableAsset,
@@ -211,12 +216,37 @@ export function analyzeDeterministically(
   window: ReportWindow,
 ): DeterministicAnalysis {
   const mutableBlocks = createBlocks(events);
-  const projections = mutableBlocks.map((block, index) =>
+  const blockProjections = mutableBlocks.map((block, index) =>
     blockProjection(block, index + 1, Date.parse(window.end))
   );
-  const workBlocks = projections.map((item) => item.block);
-  const tasks = projections.map((item) => item.task);
-  const allEvidence = projections.flatMap((item) => item.evidence);
+  const taskGraph = reconstructTaskBoundaries(events, window);
+  const taskProjections = taskGraph.tasks.map((boundary, index) => {
+    const projection = blockProjection(
+      {
+        projectRef: boundary.projectRef,
+        projectLabel: boundary.projectLabel,
+        events: boundary.events,
+      },
+      index + 1,
+      Date.parse(window.end),
+    );
+    projection.task = {
+      ...projection.task,
+      id: boundary.id,
+      name: boundary.name,
+      projectRef: boundary.projectRef,
+      projectLabel: boundary.projectLabel,
+      start: boundary.start,
+      activeMinutes: boundary.activeMinutes,
+      confidence: boundary.confidence,
+      sourceSessionIds: boundary.sourceSessionIds,
+      relationIds: boundary.relationIds,
+    };
+    return projection;
+  });
+  const workBlocks = blockProjections.map((item) => item.block);
+  const tasks = taskProjections.map((item) => item.task);
+  const allEvidence = taskProjections.flatMap((item) => item.evidence);
   const facts = buildSessionFacts(events, window);
   const usageMetrics = {
     sessions: new Set(events.map((event) => event.sourceSessionId)).size,
@@ -233,6 +263,7 @@ export function analyzeDeterministically(
     usageDistributions: facts.distributions,
     workBlocks,
     tasks,
+    taskRelations: taskGraph.relations,
     evidence: allEvidence,
     score: scoreCollaboration(tasks, allEvidence),
   };

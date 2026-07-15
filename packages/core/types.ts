@@ -92,9 +92,23 @@ export interface TaskSummary {
   verification: "verified" | "attempted" | "not_observed";
   confidence: number;
   evidenceIds: string[];
+  sourceSessionIds: string[];
+  relationIds: string[];
   hasIteration: boolean;
   hasVerification: boolean;
   hasReusableAsset: boolean;
+}
+
+export interface TaskRelation {
+  id: string;
+  fromTaskId: string;
+  toTaskId: string;
+  fromSessionId: string;
+  toSessionId: string;
+  type: "continuation" | "delegation" | "shared_deliverable" | "candidate";
+  evidenceEventIds: string[];
+  confidence: number;
+  merged: boolean;
 }
 
 export interface ScoreDimension {
@@ -139,6 +153,7 @@ export interface DailyReport {
   usageDistributions: UsageDistributions;
   workBlocks: WorkBlock[];
   tasks: TaskSummary[];
+  taskRelations: TaskRelation[];
   score: { total: number | null; dimensions: ScoreDimension[] };
   maturity: { level: "L1" | "L2" | "L3" | "L4" | "unavailable"; reason: string };
   evidence: Evidence[];

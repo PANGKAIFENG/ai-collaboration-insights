@@ -187,7 +187,7 @@ export async function parseCodexLine(
         ? lifecycle
         : "unknown";
       const rawRunId = string(payload.agent_thread_id);
-      subagentRunId = rawRunId ? await sha256(`codex-agent:${rawRunId}`) : undefined;
+      subagentRunId = rawRunId ? await sha256(`codex-session:${rawRunId}`) : undefined;
       subagentDepth = Math.max(
         1,
         string(payload.agent_path)?.split("/").filter(Boolean).length ?? 1,

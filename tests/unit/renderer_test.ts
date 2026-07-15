@@ -53,10 +53,13 @@ function syntheticReport(): DailyReport {
       verification: "not_observed",
       confidence: 0.75,
       evidenceIds: ["evidence-1"],
+      sourceSessionIds: ["session-1"],
+      relationIds: [],
       hasIteration: true,
       hasVerification: false,
       hasReusableAsset: false,
     }],
+    taskRelations: [],
     score: {
       total: 70,
       dimensions: [{
