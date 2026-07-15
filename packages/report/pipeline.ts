@@ -1,4 +1,5 @@
 import { analyzeDeterministically } from "../analysis/deterministic.ts";
+import { scoreCollaboration } from "../analysis/scoring.ts";
 import { type AnalyzerRunner, runCodexAnalysis } from "../analysis/codex_analyzer.ts";
 import { buildAnalysisDetails, buildAnalysisPackage } from "../analysis/redaction.ts";
 import { scanCodexWindow } from "../codex/adapter.ts";
@@ -232,7 +233,12 @@ export async function generateDailyReport(
         const enrichmentById = new Map(analysis.enrichment.tasks.map((item) => [item.id, item]));
         report.tasks = report.tasks.map((task) => {
           const enrichment = enrichmentById.get(task.id);
-          if (!enrichment) return task;
+          if (!enrichment) {
+            return {
+              ...task,
+              analysisStatus: analysis.status === "partial" ? "not_analyzed" : "deterministic",
+            };
+          }
           return {
             ...task,
             name: enrichment.name,
@@ -243,6 +249,7 @@ export async function generateDailyReport(
               ? "not_observed"
               : "attempted",
             confidence: Math.max(task.confidence, enrichment.confidence),
+            analysisStatus: "analyzed",
           };
         });
         report.sessionInsights = analysis.enrichment.insights;
@@ -269,6 +276,14 @@ export async function generateDailyReport(
         };
       }
     }
+    const finalScore = scoreCollaboration(report.tasks, report.evidence, {
+      partialAnalysis: report.analysisStatus.status === "partial",
+      analyzedTaskIds: report.tasks.filter((task) => task.analysisStatus === "analyzed").map((
+        task,
+      ) => task.id),
+    });
+    report.score = { total: finalScore.total, dimensions: finalScore.dimensions };
+    report.maturity = finalScore.maturity;
     validateDailyReport(report);
     const html = renderDailyReport(report);
     await publishDateDirectory(reportsDir, options.date, report, html, options.beforePublish);

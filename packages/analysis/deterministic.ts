@@ -1,5 +1,6 @@
 import type {
   Evidence,
+  EvidenceSourceCategory,
   ReportWindow,
   TaskEvidencePacket,
   TaskRelation,
@@ -109,8 +110,22 @@ function evidence(
   label: string,
   events: UnifiedEvent[],
   confidence: number,
+  sourceCategories: EvidenceSourceCategory[],
 ): Evidence {
-  return { id, type, label, eventIds: events.map((event) => event.eventId), confidence };
+  const availability = events.some((event) => event.availability === "unavailable")
+    ? "unknown"
+    : events.some((event) => event.availability === "partial")
+    ? "partial"
+    : "complete";
+  return {
+    id,
+    type,
+    label,
+    eventIds: events.map((event) => event.eventId),
+    confidence,
+    sourceCategories,
+    availability,
+  };
 }
 
 function blockProjection(
@@ -129,7 +144,14 @@ function blockProjection(
   const taskEvidence: Evidence[] = [];
   if (users.length > 0) {
     taskEvidence.push(
-      evidence(`task-${index}-intent`, "intent", "观察到用户目标消息", [users[0]], 0.8),
+      evidence(
+        `task-${index}-intent`,
+        "intent",
+        "观察到用户目标消息",
+        [users[0]],
+        0.8,
+        ["user_message"],
+      ),
     );
   }
   const hasIteration = users.length + assistants.length + tools.length >= 3;
@@ -140,20 +162,28 @@ function blockProjection(
       "同一任务包含多次消息或工具行动",
       [...users, ...assistants, ...tools].slice(0, 6),
       0.72,
+      ["user_message", "tool_action"],
     ));
   }
-  const verificationEvents = block.events.filter((event) =>
-    /(^|[_-])(test|check|lint|build|verify)([_-]|$)/i.test(event.toolName ?? "") ||
-    /tests? (passed|pass)|verified|验证通过|检查通过/i.test(event.contentPreview ?? "")
+  const verificationActions = tools.filter((event) =>
+    event.actionCategory === "verification" ||
+    /(^|[_-])(test|check|lint|build|verify)([_-]|$)/i.test(event.toolName ?? "")
   );
-  const hasVerification = verificationEvents.length > 0;
+  const firstVerificationAt = verificationActions[0]?.timestamp;
+  const verificationResults = assistants.filter((event) =>
+    firstVerificationAt && event.timestamp >= firstVerificationAt &&
+    /tests?\s+(?:passed|pass)|\b(?:check|lint|build|verify|verified)\b.*\bpass(?:ed)?\b|验证通过|检查通过|构建通过/i
+      .test(event.contentPreview ?? "")
+  );
+  const hasVerification = verificationActions.length > 0 && verificationResults.length > 0;
   if (hasVerification) {
     taskEvidence.push(evidence(
       `task-${index}-verification`,
       "verification",
-      "观察到测试、检查或验证信号",
-      verificationEvents,
-      0.82,
+      "观察到验证动作和明确通过结果",
+      [...verificationActions, ...verificationResults],
+      0.86,
+      ["tool_action", "assistant_result"],
     ));
   }
   if (subagents.length > 0) {
@@ -163,19 +193,28 @@ function blockProjection(
       "观察到 Subagent 协作",
       subagents,
       0.9,
+      ["subagent_lifecycle"],
     ));
   }
-  const assetEvents = block.events.filter((event) =>
-    /skill|workflow|template|script|reusable|文档|测试覆盖/i.test(event.contentPreview ?? "")
+  const artifactActions = tools.filter((event) =>
+    event.actionCategory === "artifact_change" ||
+    /apply_patch|write(?:_file)?|create(?:_file)?|edit(?:_file)?/i.test(event.toolName ?? "")
   );
-  const hasReusableAsset = assetEvents.length > 0;
+  const firstArtifactAt = artifactActions[0]?.timestamp;
+  const assetResults = assistants.filter((event) =>
+    firstArtifactAt && event.timestamp >= firstArtifactAt &&
+    /(?:added|created|updated|implemented|新增|创建|更新|沉淀|完成).*(?:skill|workflow|template|script|reusable|文档|测试覆盖|可复用)|(?:skill|workflow|template|script|reusable|文档|测试覆盖|可复用).*(?:added|created|updated|implemented|新增|创建|更新|沉淀|完成)/i
+      .test(event.contentPreview ?? "")
+  );
+  const hasReusableAsset = artifactActions.length > 0 && assetResults.length > 0;
   if (hasReusableAsset) {
     taskEvidence.push(evidence(
       `task-${index}-assetization`,
       "assetization",
-      "成果包含可复用资产信号",
-      assetEvents,
-      0.68,
+      "观察到可复用资产变更和结果摘要",
+      [...artifactActions, ...assetResults],
+      0.84,
+      ["artifact_change", "assistant_result"],
     ));
   }
   const name = users.find((event) => event.contentPreview)?.contentPreview ??
@@ -213,6 +252,7 @@ function blockProjection(
       hasIteration,
       hasVerification,
       hasReusableAsset,
+      analysisStatus: "deterministic",
     },
     evidence: taskEvidence,
   };
@@ -253,6 +293,7 @@ export function analyzeDeterministically(
         "观察到新反馈后的有效调整",
         boundary.events.filter((event) => effectiveEventIds.has(event.eventId)).slice(0, 8),
         0.82,
+        ["semantic_round", "user_message", "tool_action"],
       ));
     }
     evidencePackets.push(buildTaskEvidencePacket(boundary, rounds));

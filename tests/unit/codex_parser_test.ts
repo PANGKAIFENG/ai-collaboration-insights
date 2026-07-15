@@ -93,6 +93,53 @@ Deno.test("maps supported search response items without unknown diagnostics", as
   assertEquals(output.event?.kind, "tool_result");
 });
 
+Deno.test("classifies verification commands without retaining command text", async () => {
+  const result = await parseCodexLine(
+    JSON.stringify({
+      timestamp: "2026-07-14T11:06:00.000Z",
+      type: "response_item",
+      payload: {
+        type: "function_call",
+        id: "verify-call",
+        name: "exec_command",
+        arguments: JSON.stringify({ cmd: "deno task verify" }),
+      },
+    }),
+    7,
+    createParserState(),
+  );
+
+  assertEquals(result.event?.kind, "tool_call");
+  assertEquals(
+    (result.event as unknown as { actionCategory?: string })?.actionCategory,
+    "verification",
+  );
+  assertEquals(result.event?.contentPreview, undefined);
+});
+
+Deno.test("classifies artifact mutation tools without retaining patch content", async () => {
+  const result = await parseCodexLine(
+    JSON.stringify({
+      timestamp: "2026-07-14T11:07:00.000Z",
+      type: "response_item",
+      payload: {
+        type: "function_call",
+        id: "patch-call",
+        name: "functions.apply_patch",
+        arguments: "private synthetic patch content",
+      },
+    }),
+    8,
+    createParserState(),
+  );
+
+  assertEquals(
+    (result.event as unknown as { actionCategory?: string })?.actionCategory,
+    "artifact_change",
+  );
+  assertEquals(result.event?.contentPreview, undefined);
+});
+
 Deno.test("normalizes subagent lifecycle by stable thread identity", async () => {
   const result = await parseCodexLine(
     JSON.stringify({

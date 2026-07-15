@@ -153,3 +153,53 @@ Deno.test("does not promote a repeated failure loop to iteration evidence", () =
   assertEquals(result.tasks[0].effectiveRoundCount, 0);
   assertEquals(result.evidence.some((item) => item.type === "iteration"), false);
 });
+
+Deno.test("does not infer verification or asset creation from keywords alone", () => {
+  const result = analyzeDeterministically([
+    event("intent", "2026-07-14T11:00:00.000Z", "message", {
+      role: "user",
+      contentPreview: "Discuss tests, Skill docs, templates and reusable scripts",
+    }),
+    event("answer", "2026-07-14T11:01:00.000Z", "message", {
+      role: "assistant",
+      contentPreview: "You could run tests and create a Skill document later",
+    }),
+  ], reportDateWindow("2026-07-15", "Asia/Shanghai"));
+
+  assertEquals(result.tasks[0].hasVerification, false);
+  assertEquals(result.tasks[0].hasReusableAsset, false);
+  assertEquals(result.evidence.some((item) => item.type === "verification"), false);
+  assertEquals(result.evidence.some((item) => item.type === "assetization"), false);
+});
+
+Deno.test("requires an action and result to create typed verification and asset evidence", () => {
+  const result = analyzeDeterministically([
+    event("intent", "2026-07-14T11:00:00.000Z", "message", {
+      role: "user",
+      contentPreview: "Add a reusable report check",
+    }),
+    event("write", "2026-07-14T11:01:00.000Z", "tool_call", {
+      toolName: "apply_patch",
+      contentDigest: "write-check",
+    }),
+    event("asset-result", "2026-07-14T11:02:00.000Z", "message", {
+      role: "assistant",
+      contentPreview: "Added the reusable report check script",
+    }),
+    event("verify", "2026-07-14T11:03:00.000Z", "tool_call", {
+      toolName: "deno_test",
+      contentDigest: "run-check",
+    }),
+    event("verify-result", "2026-07-14T11:04:00.000Z", "message", {
+      role: "assistant",
+      contentPreview: "Tests passed: 8 passed, 0 failed",
+    }),
+  ], reportDateWindow("2026-07-15", "Asia/Shanghai"));
+
+  const verification = result.evidence.find((item) => item.type === "verification");
+  const asset = result.evidence.find((item) => item.type === "assetization");
+  assertEquals(result.tasks[0].hasVerification, true);
+  assertEquals(result.tasks[0].hasReusableAsset, true);
+  assertEquals(verification?.sourceCategories, ["tool_action", "assistant_result"]);
+  assertEquals(asset?.sourceCategories, ["artifact_change", "assistant_result"]);
+});

@@ -31,6 +31,7 @@ export interface UnifiedEvent {
   usage?: Usage;
   usageSemantics?: "session_cumulative" | "call_increment" | "unknown_snapshot";
   toolName?: string;
+  actionCategory?: "verification" | "artifact_change";
   subagentDepth?: number;
   subagentRunId?: string;
   subagentStatus?: "started" | "interacted" | "interrupted" | "completed" | "unknown";
@@ -68,7 +69,19 @@ export interface Evidence {
   label: string;
   eventIds: string[];
   confidence: number;
+  sourceCategories?: EvidenceSourceCategory[];
+  availability?: "complete" | "partial" | "unknown";
 }
+
+export type EvidenceSourceCategory =
+  | "user_message"
+  | "semantic_round"
+  | "tool_action"
+  | "tool_result"
+  | "assistant_result"
+  | "subagent_lifecycle"
+  | "artifact_change"
+  | "keyword_match";
 
 export interface WorkBlock {
   id: string;
@@ -163,6 +176,7 @@ export interface TaskSummary {
   hasIteration: boolean;
   hasVerification: boolean;
   hasReusableAsset: boolean;
+  analysisStatus?: "deterministic" | "analyzed" | "not_analyzed" | "degraded";
 }
 
 export interface TaskRelation {
@@ -183,6 +197,8 @@ export interface ScoreDimension {
   score: number | null;
   confidence: number;
   evidenceIds: string[];
+  status?: "available" | "candidate" | "degraded" | "unavailable";
+  reason?: string;
 }
 
 export interface CoachSuggestion {
