@@ -1,0 +1,59 @@
+<mxfile host="app.diagrams.net" modified="2026-07-15T00:00:00.000Z" agent="Codex" version="26.0.11">
+  <diagram id="task-reconstruction-progressive-analysis" name="任务重建与渐进分析">
+    <mxGraphModel dx="2100" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2100" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="step-1" value="1. 事实扫描&#xa;解析 / 去重 / 完整度" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eef4ff;strokeColor=#5b8def;strokeWidth=2;fontSize=17;" vertex="1" parent="1">
+          <mxGeometry x="40" y="190" width="190" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="step-2" value="2. 来源分类&#xa;用户 / 系统 / 工具 / Agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eef4ff;strokeColor=#5b8def;strokeWidth=2;fontSize=17;" vertex="1" parent="1">
+          <mxGeometry x="280" y="190" width="190" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="step-3" value="3. 会话分析卡&#xa;事实画像 / 洞察候选" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff7db;strokeColor=#d8a437;strokeWidth=2;fontSize=17;" vertex="1" parent="1">
+          <mxGeometry x="520" y="190" width="190" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="step-4" value="4. 任务关系图&#xa;拆分 / 继续 / 委派 / 无关" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff7db;strokeColor=#d8a437;strokeWidth=2;fontSize=17;" vertex="1" parent="1">
+          <mxGeometry x="760" y="190" width="190" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="step-5" value="5. 语义轮次&#xa;触发 / 尝试 / 结果 / 决策" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff7db;strokeColor=#d8a437;strokeWidth=2;fontSize=17;" vertex="1" parent="1">
+          <mxGeometry x="1000" y="190" width="190" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="step-6" value="6. 任务证据包&#xa;主干 / 压缩过程 / 原文引用" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff7db;strokeColor=#d8a437;strokeWidth=2;fontSize=17;" vertex="1" parent="1">
+          <mxGeometry x="1240" y="190" width="190" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="decision-1" value="证据是否&#xa;足够？" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff7db;strokeColor=#d8a437;strokeWidth=2;fontSize=17;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1480" y="190" width="160" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="step-7" value="7. 分任务 AI 分析&#xa;成果 / 模式 / 置信度" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dff4e6;strokeColor=#2e9c61;strokeWidth=2;fontSize=17;" vertex="1" parent="1">
+          <mxGeometry x="1690" y="190" width="190" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="step-8" value="8. 门禁与日报&#xa;数据 / 成果 / L1-L4 / 建议" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dff4e6;strokeColor=#2e9c61;strokeWidth=2;fontSize=17;" vertex="1" parent="1">
+          <mxGeometry x="1930" y="190" width="190" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="branch-1" value="按需回读&#xa;仅取冲突或低置信片段" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe5e1;strokeColor=#c65d4d;strokeWidth=2;fontSize=17;" vertex="1" parent="1">
+          <mxGeometry x="1450" y="390" width="220" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="branch-2" value="仍不足或超过预算&#xa;标记证据不足并降级" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe5e1;strokeColor=#c65d4d;strokeWidth=2;fontSize=17;" vertex="1" parent="1">
+          <mxGeometry x="1690" y="520" width="240" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="support" value="共享支撑：只读源日志 / 内容预算 / 证据锚点 / 置信度 / 隐私授权 / 分析版本" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff1b8;strokeColor=#d8a437;strokeWidth=2;fontSize=17;" vertex="1" parent="1">
+          <mxGeometry x="520" y="690" width="1120" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#4e7fd1;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="step-1" target="step-2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#4e7fd1;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="step-2" target="step-3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#4e7fd1;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="step-3" target="step-4"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#4e7fd1;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="step-4" target="step-5"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#d8a437;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="step-5" target="step-6"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#d8a437;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="step-6" target="decision-1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e7" value="是" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2e9c61;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="decision-1" target="step-7"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e8" value="否" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#c65d4d;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="decision-1" target="branch-1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e9" value="补充证据" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#c65d4d;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="branch-1" target="step-6"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e10" value="足够" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2e9c61;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="branch-1" target="step-7"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e11" value="仍不足" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#c65d4d;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="branch-1" target="branch-2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e12" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2e9c61;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="step-7" target="step-8"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e13" value="降级输出" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#c65d4d;strokeWidth=2.5;endArrow=block;" edge="1" parent="1" source="branch-2" target="step-8"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
