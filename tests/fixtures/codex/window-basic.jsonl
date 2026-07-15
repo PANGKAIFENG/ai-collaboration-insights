@@ -1,0 +1,10 @@
+{"timestamp":"2026-07-14T11:00:00.000Z","type":"session_meta","payload":{"id":"synthetic-session-a","timestamp":"2026-07-14T11:00:00.000Z","cwd":"/synthetic/projects/alpha","cli_version":"0.131.0"}}
+{"timestamp":"2026-07-14T11:05:00.000Z","type":"response_item","payload":{"type":"message","id":"msg-user-1","role":"user","content":[{"type":"input_text","text":"Implement report window tests"}]}}
+{"timestamp":"2026-07-14T11:07:00.000Z","type":"response_item","payload":{"type":"function_call","id":"call-1","call_id":"call-1","name":"apply_patch","arguments":"{\"synthetic\":true}"}}
+{"timestamp":"2026-07-14T11:08:00.000Z","type":"response_item","payload":{"type":"message","id":"msg-assistant-1","role":"assistant","content":[{"type":"output_text","text":"Added deterministic window coverage."}]}}
+{"timestamp":"2026-07-14T11:09:00.000Z","type":"event_msg","payload":{"type":"token_count","info":{"last_token_usage":{"input_tokens":120,"cached_input_tokens":20,"output_tokens":40,"reasoning_output_tokens":10,"total_tokens":160},"total_token_usage":{"input_tokens":120,"cached_input_tokens":20,"output_tokens":40,"reasoning_output_tokens":10,"total_tokens":160},"model_context_window":258400}}}
+{"timestamp":"2026-07-14T11:10:00.000Z","type":"event_msg","payload":{"type":"sub_agent_activity","agent_path":"reviewer","agent_thread_id":"synthetic-agent","event_id":"agent-event-1","kind":"spawned","occurred_at_ms":1784027400000}}
+{"timestamp":"2026-07-14T11:10:00.000Z","type":"event_msg","payload":{"type":"sub_agent_activity","agent_path":"reviewer","agent_thread_id":"synthetic-agent","event_id":"agent-event-1","kind":"spawned","occurred_at_ms":1784027400000}}
+{"timestamp":"2026-07-14T11:12:00.000Z","type":"future_record","payload":{"type":"not_supported"}}
+{"timestamp":"2026-07-15T11:00:00.000Z","type":"response_item","payload":{"type":"message","id":"right-boundary","role":"user","content":[{"type":"input_text","text":"Must be excluded"}]}}
+{malformed-json
