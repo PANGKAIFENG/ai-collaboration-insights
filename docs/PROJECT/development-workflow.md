@@ -13,6 +13,11 @@
 9. Pull request review and required checks.
 10. Release notes, tagged release, and installation verification.
 
+`v0.1.0` has completed this sequence. Current work starts from public-alpha
+evidence: validate the installed report, file observed defects, and deliver
+small fixes through the same Issue, branch, pull-request, and verification
+path. Scope expansion requires a new product decision before implementation.
+
 ## Branch Model
 
 - main: protected, reviewable, and release-ready.
@@ -23,7 +28,11 @@
 
 Long-lived develop branches are intentionally avoided. Integration happens through small pull requests into main.
 
-The V1 phase sequence is maintained in `/plans/ai-collaboration-insights-v1.md`. GitHub Issues own live execution state; the roadmap is updated only when sequencing or durable dependencies change.
+The released MVP sequence is recorded in
+`/plans/ai-collaboration-insights-v1.md`; the detailed implementation record is
+`/plans/codex-daily-report-mvp-v0.1.md`. GitHub Issues own live execution state.
+The broader V1 PRD is a post-MVP direction, not authorization to restore
+deferred features.
 
 ## Issue Types
 
