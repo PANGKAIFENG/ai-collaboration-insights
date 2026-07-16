@@ -6,11 +6,11 @@ Build an open-source, local-first product that helps individuals understand and 
 
 ## Current Phase
 
-`v0.2.0` is the current public alpha. It adds trustworthy session facts,
-cross-session task reconstruction, semantic rounds, progressive per-task
-analysis and confidence-gated scoring without changing the Codex-only daily
-report product boundary. The current phase remains real-use validation of
-report reliability, task recognition, comprehension, and coaching value.
+`v0.2.1` is the current public alpha. It retains the `v0.2.0` progressive
+analysis model while fixing deterministic report path redaction, daily-window
+Token accounting, and injected-context task titles. The Codex-only daily report
+boundary is unchanged. The current phase remains real-use validation of report
+reliability, task recognition, comprehension, and coaching value.
 
 ## Target User
 
