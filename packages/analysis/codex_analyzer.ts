@@ -2,6 +2,7 @@ import schema from "./analysis-schema.json" with { type: "json" };
 import type { AnalysisDetailPackage, AnalysisPackage, AnalysisTaskCore } from "./redaction.ts";
 import type { SessionInsight } from "../core/types.ts";
 import type { ConsentState } from "../runtime/commands.ts";
+import { codexModelRouteArgs } from "./codex_config.ts";
 
 export interface AnalyzerCommand {
   command: "codex";
@@ -60,7 +61,10 @@ interface RunOptions {
   consent: ConsentState;
   runner?: AnalyzerRunner;
   timeoutMs?: number;
+  codexConfigPath?: string;
 }
+
+const CORE_BATCH_TASKS = 4;
 
 function text(value: unknown, max: number): string | undefined {
   return typeof value === "string" && value.length > 0 && value.length <= max ? value : undefined;
@@ -243,6 +247,14 @@ export async function runCodexAnalysis(options: RunOptions): Promise<AnalysisRes
       coverage: { totalTasks: 0, analyzedTasks: 0, detailTasks: 0 },
     };
   }
+  let modelRouteArgs: string[] = [];
+  try {
+    if (!options.runner || options.codexConfigPath !== undefined) {
+      modelRouteArgs = await codexModelRouteArgs(options.codexConfigPath);
+    }
+  } catch {
+    return { status: "degraded", reason: "Codex model provider configuration is invalid" };
+  }
   const tempDir = await Deno.makeTempDir({ prefix: "aci-analysis-" });
   try {
     const schemaPath = `${tempDir}/analysis-schema.json`;
@@ -271,6 +283,9 @@ export async function runCodexAnalysis(options: RunOptions): Promise<AnalysisRes
           "--ephemeral",
           "--ignore-user-config",
           "--ignore-rules",
+          ...modelRouteArgs,
+          "-c",
+          'model_reasoning_effort="low"',
           "--sandbox",
           "read-only",
           "--skip-git-repo-check",
@@ -313,19 +328,34 @@ export async function runCodexAnalysis(options: RunOptions): Promise<AnalysisRes
       }
     };
 
-    const core = await runPass(options.input, options.input, "core");
-    if (!core.enrichment || core.enrichment.tasks.length === 0) {
-      return { status: "degraded", reason: core.reason ?? "Codex core analysis returned no tasks" };
+    let enrichment: AnalysisEnrichment = { tasks: [], insights: [], suggestions: [] };
+    const coreReasons: string[] = [];
+    for (let index = 0; index < options.input.tasks.length; index += CORE_BATCH_TASKS) {
+      const batchInput = analysisInput(
+        options.input.tasks.slice(index, index + CORE_BATCH_TASKS),
+        options.input,
+      );
+      const batch = await runPass(batchInput, batchInput, "core");
+      if (batch.enrichment && batch.enrichment.tasks.length > 0) {
+        enrichment = mergeEnrichment(batch.enrichment, enrichment);
+      } else {
+        coreReasons.push(batch.reason ?? "Codex core analysis returned no tasks");
+      }
     }
-    const analyzedTaskIds = new Set(core.enrichment.tasks.map((task) => task.id));
+    if (enrichment.tasks.length === 0) {
+      return {
+        status: "degraded",
+        reason: coreReasons[0] ?? "Codex core analysis returned no tasks",
+      };
+    }
+    const analyzedTaskIds = new Set(enrichment.tasks.map((task) => task.id));
     const coverage: AnalysisCoverage = {
       totalTasks: options.input.tasks.length,
       analyzedTasks: analyzedTaskIds.size,
       detailTasks: 0,
     };
-    let enrichment = core.enrichment;
     let detailReason: string | undefined;
-    const requestedIds = core.enrichment.tasks.filter((result) => {
+    const requestedIds = enrichment.tasks.filter((result) => {
       const task = options.input.tasks.find((candidate) => candidate.id === result.id);
       return result.needsDetail && Boolean(task) &&
         (result.conflict || (task?.boundaryConfidence ?? 1) < 0.8);
@@ -348,7 +378,7 @@ export async function runCodexAnalysis(options: RunOptions): Promise<AnalysisRes
             details: { ...providedDetails, tasks: availableDetails },
           }, "detail");
           if (detail.enrichment && detail.enrichment.tasks.length > 0) {
-            enrichment = mergeEnrichment(core.enrichment, detail.enrichment);
+            enrichment = mergeEnrichment(enrichment, detail.enrichment);
             coverage.detailTasks = detail.enrichment.tasks.length;
           } else detailReason = detail.reason ?? "Codex detail analysis returned no tasks";
         }
@@ -356,13 +386,20 @@ export async function runCodexAnalysis(options: RunOptions): Promise<AnalysisRes
         detailReason = error instanceof Error ? error.message : "Requested detail was unavailable";
       }
     }
-    if (coverage.analyzedTasks < coverage.totalTasks || detailReason) {
+    if (coverage.analyzedTasks < coverage.totalTasks || coreReasons.length > 0 || detailReason) {
+      const reasons = [
+        ...new Set([...coreReasons, detailReason].filter((
+          reason,
+        ): reason is string => Boolean(reason))),
+      ];
       return {
         status: "partial",
         enrichment,
         coverage,
-        reason: detailReason ??
+        reason: [
           `Codex analysis covered ${coverage.analyzedTasks} of ${coverage.totalTasks} tasks`,
+          ...reasons,
+        ].join("; "),
       };
     }
     return { status: "complete", enrichment, coverage };
