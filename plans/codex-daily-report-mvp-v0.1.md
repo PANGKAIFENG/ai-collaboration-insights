@@ -204,7 +204,7 @@ git commit -m "feat(report): publish idempotent static daily report (#14 #17)"
 
 - [ ] **Step 1: Write failing disclosure, redaction, argv and fallback tests**
 
-Assert no subprocess before consent, consent schema/disclosure version, API keys and private paths removed, code/tool output truncated, exact non-shell `codex exec --ephemeral --ignore-user-config --ignore-rules --sandbox read-only` argv, empty temp cwd, bounded stdin, timeout, invalid JSON, extra suggestions and missing Codex all returning deterministic fallback status.
+Assert no subprocess before consent, consent schema/disclosure version, API keys and private paths removed, code/tool output truncated, non-shell `codex exec --ephemeral --ignore-user-config --ignore-rules --sandbox read-only` argv with only allowlisted model-provider route overrides, empty temp cwd, bounded stdin, four-task core batches, partial coverage after an isolated batch timeout, invalid JSON, extra suggestions and missing Codex all returning deterministic fallback status.
 
 - [ ] **Step 2: Verify RED**
 

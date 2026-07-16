@@ -1,6 +1,10 @@
 import { assert, assertEquals } from "../_assert.ts";
 import { type AnalyzerCommand, runCodexAnalysis } from "../../packages/analysis/codex_analyzer.ts";
-import type { AnalysisDetailPackage, AnalysisPackage } from "../../packages/analysis/redaction.ts";
+import type {
+  AnalysisDetailPackage,
+  AnalysisPackage,
+  AnalysisTaskCore,
+} from "../../packages/analysis/redaction.ts";
 import { grantConsent, readConsent, revokeConsent } from "../../packages/runtime/commands.ts";
 
 const coverage = {
@@ -123,6 +127,56 @@ function output(taskIds = ["task-1", "task-2"], detailTaskId?: string): string {
   });
 }
 
+function outputForTasks(tasks: AnalysisTaskCore[]): string {
+  return JSON.stringify({
+    tasks: tasks.map((task) => ({
+      id: task.id,
+      name: `Analyzed ${task.id}`,
+      outcome: `Outcome ${task.id}`,
+      verificationStatus: "not_observed",
+      confidence: 0.8,
+      evidenceIds: [task.evidenceIds[0]],
+      needsDetail: false,
+      conflict: false,
+    })),
+    insights: [],
+    suggestions: [],
+  });
+}
+
+function coreInput(request: AnalyzerCommand): AnalysisPackage {
+  return JSON.parse(request.stdin.split("\n").at(-1) ?? "{}") as AnalysisPackage;
+}
+
+function largeInput(taskCount: number): AnalysisPackage {
+  const template = inputPackage.tasks[0];
+  return {
+    ...inputPackage,
+    metrics: { ...inputPackage.metrics, sessions: taskCount },
+    tasks: Array.from({ length: taskCount }, (_, index) => {
+      const sequence = index + 1;
+      return {
+        ...template,
+        id: `task-${sequence}`,
+        name: `Synthetic task ${sequence}`,
+        outcome: `Synthetic outcome ${sequence}`,
+        evidenceIds: [`event-${sequence}`],
+        sessionRefs: [`session-${sequence}`],
+        anchors: [{
+          ...template.anchors[0],
+          eventId: `event-${sequence}`,
+          text: `Implement task ${sequence}`,
+        }],
+      };
+    }),
+    coverage: {
+      ...inputPackage.coverage,
+      totalTasks: taskCount,
+      includedTaskCores: taskCount,
+    },
+  };
+}
+
 Deno.test("never invokes Codex before explicit consent", async () => {
   let invoked = false;
   let detailsRead = false;
@@ -144,28 +198,92 @@ Deno.test("never invokes Codex before explicit consent", async () => {
 });
 
 Deno.test("covers late tasks with isolated ephemeral argv and evidence-backed output", async () => {
+  const root = await Deno.makeTempDir();
+  const configPath = `${root}/config.toml`;
+  await Deno.writeTextFile(
+    configPath,
+    [
+      'model_provider = "synthetic_provider"',
+      'model = "synthetic-model"',
+      "[model_providers.synthetic_provider]",
+      'name = "Synthetic Provider"',
+      'base_url = "https://synthetic.invalid/v1"',
+      'wire_api = "responses"',
+      "requires_openai_auth = true",
+      'http_headers = { Authorization = "must-not-leak" }',
+    ].join("\n"),
+  );
   let request: AnalyzerCommand | undefined;
+  try {
+    const result = await runCodexAnalysis({
+      input: inputPackage,
+      detailProvider,
+      consent,
+      codexConfigPath: configPath,
+      runner: (value) => {
+        request = value;
+        return Promise.resolve({ code: 0, output: output() });
+      },
+    });
+    assertEquals(result.status, "complete");
+    assertEquals(result.coverage, { totalTasks: 2, analyzedTasks: 2, detailTasks: 0 });
+    assert(request);
+    assertEquals(request.command, "codex");
+    assert(request.args.includes("--ephemeral"));
+    assert(request.args.includes("--ignore-user-config"));
+    assert(request.args.includes('model_reasoning_effort="low"'));
+    assert(request.args.includes('model_provider="synthetic_provider"'));
+    assert(request.args.includes(
+      'model_providers.synthetic_provider.base_url="https://synthetic.invalid/v1"',
+    ));
+    assert(!request.args.join("\n").includes("must-not-leak"));
+    assert(request.args.includes("--ignore-rules"));
+    assert(request.args.includes("read-only"));
+    assert(request.args.at(-1) === "-");
+    assert(request.cwd.startsWith(Deno.env.get("TMPDIR") ?? "/"));
+    assert(request.stdin.includes("task-2"));
+    assert(!request.stdin.includes("detail-one"));
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("batches large core packages without starving late tasks", async () => {
+  const requests: AnalyzerCommand[] = [];
   const result = await runCodexAnalysis({
-    input: inputPackage,
-    detailProvider,
+    input: largeInput(9),
     consent,
-    runner: (value) => {
-      request = value;
-      return Promise.resolve({ code: 0, output: output() });
+    runner: (request) => {
+      requests.push(request);
+      const input = coreInput(request);
+      return Promise.resolve({ code: 0, output: outputForTasks(input.tasks) });
     },
   });
+
   assertEquals(result.status, "complete");
-  assertEquals(result.coverage, { totalTasks: 2, analyzedTasks: 2, detailTasks: 0 });
-  assert(request);
-  assertEquals(request.command, "codex");
-  assert(request.args.includes("--ephemeral"));
-  assert(request.args.includes("--ignore-user-config"));
-  assert(request.args.includes("--ignore-rules"));
-  assert(request.args.includes("read-only"));
-  assert(request.args.at(-1) === "-");
-  assert(request.cwd.startsWith(Deno.env.get("TMPDIR") ?? "/"));
-  assert(request.stdin.includes("task-2"));
-  assert(!request.stdin.includes("detail-one"));
+  assertEquals(result.coverage?.analyzedTasks, 9);
+  assertEquals(requests.length, 3);
+  assert(requests.every((request) => coreInput(request).tasks.length <= 4));
+  assert(requests.at(-1)?.stdin.includes("task-9"));
+});
+
+Deno.test("keeps successful core batches when another batch times out", async () => {
+  let requestCount = 0;
+  const result = await runCodexAnalysis({
+    input: largeInput(6),
+    consent,
+    runner: (request) => {
+      requestCount++;
+      if (requestCount === 1) return Promise.resolve({ code: 124 });
+      const input = coreInput(request);
+      return Promise.resolve({ code: 0, output: outputForTasks(input.tasks) });
+    },
+  });
+
+  assertEquals(result.status, "partial");
+  assertEquals(result.coverage?.analyzedTasks, 2);
+  assertEquals(result.coverage?.totalTasks, 6);
+  assert(result.reason?.includes("timed out"));
 });
 
 Deno.test("rereads only a requested low-confidence or conflicting task", async () => {

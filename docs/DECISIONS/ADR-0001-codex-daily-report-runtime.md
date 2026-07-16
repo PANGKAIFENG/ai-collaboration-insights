@@ -230,6 +230,10 @@ codex exec
   --ephemeral
   --ignore-user-config
   --ignore-rules
+  -c model=<allowlisted-model>
+  -c model_provider=<allowlisted-provider>
+  -c model_providers.<provider>.<allowlisted-route-field>=<value>
+  -c model_reasoning_effort="low"
   --sandbox read-only
   --skip-git-repo-check
   --cd <empty-temp-dir>
@@ -242,6 +246,12 @@ codex exec
 - `--ephemeral` 防止分析任务写入 Codex session 日志并被下一份日报重复统计。
 - `--ignore-user-config` 和 `--ignore-rules` 避免加载用户
   MCP、hooks、项目指令或自定义工具；认证仍由 Codex 自己管理。
+- 为兼容自定义 Codex provider，ACI 只从 `config.toml` 读取并通过 `-c`
+  转发模型、provider ID、无凭据 base URL、wire API、认证模式和有限重试配置。
+  静态 headers、query params、MCP、hooks、plugins 和其他用户配置不会被转发；
+  ACI 不读取或复制 `auth.json`。
+- Core analysis 每批最多处理 4 个任务；单批失败或超时只降低覆盖率，已成功批次继续
+  进入日报。只有全部批次都没有有效输出时才整份降级为确定性分析。
 - 分析在新建空目录运行，read-only sandbox 不授予 Codex 源日志或报告目录访问权。
 - 只把经过大小限制、secret redaction 和最小化处理的 analysis package 写入
   stdin。
@@ -325,8 +335,8 @@ artifact、PR 日志或 Release asset。
 - JSON/JSONL 不适合多来源、并发访问和复杂重算；触发恢复条件后必须迁移 SQLite。
 - Deno 是新的仓库工具链，需要在 CI 和贡献文档中明确安装方式。
 - 未签名二进制的公开分发体验不如 notarized `.app`。
-- 使用 `--ignore-user-config` 可能不兼容只依赖自定义 Codex provider
-  配置的用户；该场景降级为指标日报并记录为已知限制。
+- 只依赖静态认证 headers、带凭据/query 的 base URL 或其他非白名单 provider
+  字段的 Codex 配置不会被转发；该场景安全降级为指标日报。
 
 ## 备选方案
 
