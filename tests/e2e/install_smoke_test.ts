@@ -10,7 +10,7 @@ Deno.test("checksum installer and uninstaller preserve reports unless purge is e
   const asset = `aci-${arch}-apple-darwin`;
   const binary = `#!/bin/sh
 case "$1 $2" in
-  "version ") echo 0.2.0 ;;
+  "version ") echo 0.2.1 ;;
   "schedule install"|"schedule remove") exit 0 ;;
   "data purge") rm -rf "$HOME/Library/Application Support/ai-collaboration-insights" ;;
 esac
@@ -33,7 +33,7 @@ esac
     assertEquals(install.code, 0);
     const installed = `${home}/.local/bin/aci`;
     assert(await exists(installed));
-    assertEquals((await run(installed, ["version"], { HOME: home })).stdout.trim(), "0.2.0");
+    assertEquals((await run(installed, ["version"], { HOME: home })).stdout.trim(), "0.2.1");
 
     const dataDir = `${home}/Library/Application Support/ai-collaboration-insights`;
     await Deno.mkdir(`${dataDir}/reports`, { recursive: true });

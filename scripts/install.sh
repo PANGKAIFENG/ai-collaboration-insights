@@ -4,7 +4,7 @@ set -eu
 REPOSITORY="PANGKAIFENG/ai-collaboration-insights"
 INSTALL_DIR="${ACI_INSTALL_DIR:-$HOME/.local/bin}"
 SOURCE_DIR="${ACI_INSTALL_SOURCE_DIR:-}"
-VERSION="${ACI_VERSION:-v0.2.0}"
+VERSION="${ACI_VERSION:-v0.2.1}"
 
 case "$(uname -m)" in
   arm64|aarch64) ARCH="aarch64" ;;
