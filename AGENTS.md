@@ -2,7 +2,7 @@
 
 ## Current Stage
 
-`v0.2.1` is the current public alpha. The current objective is to validate the
+`v0.2.2` is the current public alpha. The current objective is to validate the
 progressive Codex-only daily report with real usage, fix alpha blockers, and
 record non-blocking defects without expanding the MVP.
 
@@ -22,7 +22,7 @@ When scope descriptions conflict, use this precedence:
 1. `docs/PRD/codex-daily-report-mvp-scope-v0.1.md`
 2. `docs/PRD/ai-collaboration-review-prd-v0.3.md` for Codex report analysis behavior
 3. `docs/DECISIONS/ADR-0001-codex-daily-report-runtime.md`
-4. `README.md` and `docs/RELEASES/v0.2.1.md`
+4. `README.md` and `docs/RELEASES/v0.2.2.md`
 5. The broader V1 PRD and pre-compression Issue descriptions
 
 ## Privacy
