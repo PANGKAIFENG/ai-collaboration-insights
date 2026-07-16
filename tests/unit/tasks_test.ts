@@ -47,6 +47,30 @@ Deno.test("filters system scaffolding before selecting a task title", () => {
   assert(!result.tasks[0].eventIds.includes("env"));
 });
 
+Deno.test("filters pure injected Files Applications and Automation context", () => {
+  const result = reconstructTaskBoundaries([
+    event("files", "session-a", "2026-07-14T11:00:00.000Z", "message", {
+      role: "user",
+      contentPreview: "# Files mentioned by the user: synthetic.md",
+    }),
+    event("apps", "session-a", "2026-07-14T11:00:01.000Z", "message", {
+      role: "user",
+      contentPreview: "# Applications mentioned by the user: Synthetic App",
+    }),
+    event("automation", "session-a", "2026-07-14T11:00:02.000Z", "message", {
+      role: "user",
+      contentPreview: "Automation: Synthetic daily review Automation ID: synthetic",
+    }),
+    event("goal", "session-a", "2026-07-14T11:01:00.000Z", "message", {
+      role: "user",
+      contentPreview: "修复日报任务标题",
+    }),
+  ], window);
+  assertEquals(result.tasks.length, 1);
+  assertEquals(result.tasks[0].name, "修复日报任务标题");
+  assertEquals(result.tasks[0].eventIds, ["goal"]);
+});
+
 Deno.test("does not publish an orphan session without a real user goal", () => {
   const result = reconstructTaskBoundaries([
     event("child-result", "session-orphan", "2026-07-14T11:00:00.000Z", "message", {

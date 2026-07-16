@@ -54,6 +54,16 @@ function contentText(payload: JsonObject): string | undefined {
   return parts.length > 0 ? parts.join(" ") : undefined;
 }
 
+const INJECTED_USER_CONTEXT =
+  /^\s*(?:#\s*(?:Files|Applications) mentioned by the user\s*:|Automation\s*:)/i;
+const USER_REQUEST_MARKER = /##\s*My request for Codex\s*:\s*/i;
+
+function normalizeUserMessage(text: string | undefined): string | undefined {
+  if (!text || !INJECTED_USER_CONTEXT.test(text)) return text;
+  const marker = USER_REQUEST_MARKER.exec(text);
+  return marker ? text.slice(marker.index + marker[0].length) : text;
+}
+
 function usageFrom(
   payload: JsonObject,
 ): {
@@ -183,6 +193,7 @@ export async function parseCodexLine(
       kind = "message";
       role = validRole(payload.role) ?? (payloadType === "agent_message" ? "assistant" : undefined);
       previewSource = contentText(payload);
+      if (role === "user") previewSource = normalizeUserMessage(previewSource);
     } else if (payloadType === "function_call" || payloadType === "custom_tool_call") {
       kind = "tool_call";
       toolName = string(payload.name) ?? "unknown-tool";

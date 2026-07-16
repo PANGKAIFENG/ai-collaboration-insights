@@ -69,6 +69,58 @@ Deno.test("maps last token usage as a window-local call increment", async () => 
   assert(result.event?.contentDigest !== undefined);
 });
 
+Deno.test("extracts the real request after large injected user context before truncation", async () => {
+  for (
+    const injected of [
+      "# Files mentioned by the user:",
+      "# Applications mentioned by the user:",
+      "Automation: Synthetic daily review",
+    ]
+  ) {
+    const state = createParserState();
+    const result = await parseCodexLine(
+      JSON.stringify({
+        timestamp: "2026-07-14T11:02:00.000Z",
+        type: "response_item",
+        payload: {
+          type: "message",
+          role: "user",
+          content: [{
+            type: "input_text",
+            text: `${injected}\n${
+              "synthetic context ".repeat(80)
+            }\n## My request for Codex:\n修复日报任务标题`,
+          }],
+        },
+      }),
+      1,
+      state,
+      { maxPreviewChars: 80 },
+    );
+    assertEquals(result.event?.contentPreview, "修复日报任务标题");
+  }
+});
+
+Deno.test("extracts the real request when injected context and request are separate content items", async () => {
+  const result = await parseCodexLine(
+    JSON.stringify({
+      timestamp: "2026-07-14T11:02:00.000Z",
+      type: "response_item",
+      payload: {
+        type: "message",
+        role: "user",
+        content: [
+          { type: "input_text", text: "# Applications mentioned by the user: Synthetic App" },
+          { type: "input_text", text: "## My request for Codex:\n修复日报任务标题" },
+        ],
+      },
+    }),
+    1,
+    createParserState(),
+  );
+  assertEquals(result.event?.contentPreview, "修复日报任务标题");
+});
+
 Deno.test("maps supported search response items without unknown diagnostics", async () => {
   const state = createParserState();
   const call = await parseCodexLine(
