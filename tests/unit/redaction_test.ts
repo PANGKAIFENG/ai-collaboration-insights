@@ -16,12 +16,20 @@ Deno.test("removes common secrets private paths and fenced code", () => {
     "token sk-synthetic1234567890",
     "Bearer synthetic-secret-value",
     "at /Users/synthetic/private/project/file.ts",
+    "at /home/synthetic/private/project/file.ts",
+    "at /root/gate/private-result.json",
+    "at /var/folders/zz/synthetic/private-result.json",
+    "at /private/var/folders/zz/synthetic/private-result.json",
     "```ts\nconst secret = 'value';\n```",
   ].join("\n");
   const redacted = redactText(input, 500);
   assert(!redacted.includes("sk-synthetic"));
   assert(!redacted.includes("Bearer synthetic"));
   assert(!redacted.includes("/Users/synthetic"));
+  assert(!redacted.includes("/home/synthetic"));
+  assert(!redacted.includes("/root/gate"));
+  assert(!redacted.includes("/var/folders"));
+  assert(!redacted.includes("/private/var"));
   assert(!redacted.includes("const secret"));
   assert(redacted.includes("[REDACTED_SECRET]"));
   assert(redacted.includes("[PRIVATE_PATH]"));

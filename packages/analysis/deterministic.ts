@@ -14,6 +14,7 @@ import { scoreCollaboration } from "./scoring.ts";
 import { buildSessionFacts } from "./facts.ts";
 import { reconstructTaskBoundaries } from "./tasks.ts";
 import { buildTaskEvidencePacket } from "./evidence.ts";
+import { redactText } from "./redaction.ts";
 import { segmentSemanticRounds, selectKeyRounds } from "./rounds.ts";
 
 const ACTIVE_SEGMENT_MS = 5 * 60 * 1000;
@@ -217,10 +218,16 @@ function blockProjection(
       ["artifact_change", "assistant_result"],
     ));
   }
-  const name = users.find((event) => event.contentPreview)?.contentPreview ??
-    `Codex task ${block.events[0].timestamp.slice(11, 16)}`;
-  const outcome = assistants.toReversed().find((event) => event.contentPreview)?.contentPreview ??
-    "未观察到明确成果摘要";
+  const name = redactText(
+    users.find((event) => event.contentPreview)?.contentPreview ??
+      `Codex task ${block.events[0].timestamp.slice(11, 16)}`,
+    120,
+  );
+  const outcome = redactText(
+    assistants.toReversed().find((event) => event.contentPreview)?.contentPreview ??
+      "未观察到明确成果摘要",
+    240,
+  );
   const workBlock: WorkBlock = {
     id: `block-${index}`,
     start: block.events[0].timestamp,
@@ -300,7 +307,7 @@ export function analyzeDeterministically(
     projection.task = {
       ...projection.task,
       id: boundary.id,
-      name: boundary.name,
+      name: redactText(boundary.name, 120),
       projectRef: boundary.projectRef,
       projectLabel: boundary.projectLabel,
       start: boundary.start,

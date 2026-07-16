@@ -1,4 +1,4 @@
-import { assertEquals } from "../_assert.ts";
+import { assert, assertEquals } from "../_assert.ts";
 import { analyzeDeterministically } from "../../packages/analysis/deterministic.ts";
 import { EVENT_SCHEMA_VERSION, type UnifiedEvent } from "../../packages/core/types.ts";
 import { reportDateWindow } from "../../packages/core/time.ts";
@@ -54,6 +54,26 @@ Deno.test("never merges activity from different projects", () => {
     }),
   ], reportDateWindow("2026-07-15", "Asia/Shanghai"));
   assertEquals(result.workBlocks.length, 2);
+});
+
+Deno.test("redacts absolute paths from deterministic task display fields", () => {
+  const result = analyzeDeterministically([
+    event("intent", "2026-07-14T11:00:00.000Z", "message", {
+      role: "user",
+      contentPreview: "Review /Users/synthetic/private/project/spec.md",
+    }),
+    event("result", "2026-07-14T11:01:00.000Z", "message", {
+      role: "assistant",
+      contentPreview: "Wrote /root/gate/result.json from /var/folders/zz/source.txt",
+    }),
+  ], reportDateWindow("2026-07-15", "Asia/Shanghai"));
+
+  assertEquals(result.tasks.length, 1);
+  assert(!result.tasks[0].name.includes("/Users/"));
+  assert(!result.tasks[0].outcome.includes("/root/"));
+  assert(!result.tasks[0].outcome.includes("/var/folders/"));
+  assert(result.tasks[0].name.includes("[PRIVATE_PATH]"));
+  assert(result.tasks[0].outcome.includes("[PRIVATE_PATH]"));
 });
 
 Deno.test("counts tokens and subagents without adding parallel duration", () => {
