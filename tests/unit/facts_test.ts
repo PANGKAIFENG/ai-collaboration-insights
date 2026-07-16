@@ -52,6 +52,48 @@ Deno.test("uses one cumulative usage peak per session instead of summing snapsho
   });
 });
 
+Deno.test("sums window-local call increments and ignores repeated cumulative snapshots", () => {
+  const facts = buildSessionFacts([
+    event("u1", "session-a", "2026-07-14T11:00:00.000Z", "usage", {
+      usage: { inputTokens: 80, outputTokens: 20, totalTokens: 100 },
+      usageSemantics: "call_increment",
+      contentDigest: "cumulative-100",
+    }),
+    event("u2", "session-a", "2026-07-14T11:01:00.000Z", "usage", {
+      usage: { inputTokens: 40, outputTokens: 10, totalTokens: 50 },
+      usageSemantics: "call_increment",
+      contentDigest: "cumulative-150",
+    }),
+    event("u3", "session-a", "2026-07-14T11:01:00.000Z", "usage", {
+      usage: { inputTokens: 40, outputTokens: 10, totalTokens: 50 },
+      usageSemantics: "call_increment",
+      contentDigest: "cumulative-150",
+    }),
+    event("u4", "session-a", "2026-07-14T11:01:00.000Z", "usage", {
+      usage: { inputTokens: 80, outputTokens: 20, totalTokens: 100 },
+      usageSemantics: "call_increment",
+      contentDigest: "cumulative-100",
+    }),
+    event("u5", "session-b", "2026-07-14T11:02:00.000Z", "usage", {
+      usage: { inputTokens: 16, outputTokens: 4, totalTokens: 20 },
+      usageSemantics: "call_increment",
+      contentDigest: "cumulative-20",
+    }),
+  ], reportDateWindow("2026-07-15", "Asia/Shanghai"));
+
+  assertEquals(facts.totals.tokens, {
+    inputTokens: 136,
+    outputTokens: 34,
+    totalTokens: 170,
+  });
+  assertEquals(facts.distributions.tokensPerSession, {
+    sampleSize: 2,
+    mean: 85,
+    median: 85,
+    p90: 150,
+  });
+});
+
 Deno.test("unions human-active intervals globally across projects", () => {
   const events = [
     event("a", "session-a", "2026-07-14T11:00:00.000Z", "message", {

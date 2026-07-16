@@ -56,21 +56,27 @@ function contentText(payload: JsonObject): string | undefined {
 
 function usageFrom(
   payload: JsonObject,
-): { usage: Usage; semantics: NonNullable<UnifiedEvent["usageSemantics"]> } | undefined {
+): {
+  usage: Usage;
+  semantics: NonNullable<UnifiedEvent["usageSemantics"]>;
+  cumulative?: Usage;
+} | undefined {
   const info = object(payload.info);
   const total = object(info?.total_token_usage);
   const last = object(info?.last_token_usage);
   const raw = last ?? total;
   if (!raw) return undefined;
+  const normalize = (value: JsonObject): Usage => ({
+    inputTokens: number(value.input_tokens),
+    cachedInputTokens: number(value.cached_input_tokens),
+    outputTokens: number(value.output_tokens),
+    reasoningTokens: number(value.reasoning_output_tokens),
+    totalTokens: number(value.total_tokens),
+  });
   return {
-    usage: {
-      inputTokens: number(raw.input_tokens),
-      cachedInputTokens: number(raw.cached_input_tokens),
-      outputTokens: number(raw.output_tokens),
-      reasoningTokens: number(raw.reasoning_output_tokens),
-      totalTokens: number(raw.total_tokens),
-    },
-    semantics: "session_cumulative",
+    usage: normalize(raw),
+    semantics: last ? "call_increment" : "session_cumulative",
+    cumulative: total ? normalize(total) : undefined,
   };
 }
 
@@ -165,6 +171,7 @@ export async function parseCodexLine(
   let actionCategory: UnifiedEvent["actionCategory"];
   let usage: Usage | undefined;
   let usageSemantics: UnifiedEvent["usageSemantics"];
+  let usageCumulative: Usage | undefined;
   let subagentDepth: number | undefined;
   let subagentRunId: string | undefined;
   let subagentStatus: UnifiedEvent["subagentStatus"];
@@ -198,6 +205,7 @@ export async function parseCodexLine(
       if (!snapshot) return { status: "ignored", timestamp };
       usage = snapshot.usage;
       usageSemantics = snapshot.semantics;
+      usageCumulative = snapshot.cumulative;
       kind = "usage";
     } else if (payloadType === "sub_agent_activity") {
       kind = "subagent";
@@ -231,7 +239,11 @@ export async function parseCodexLine(
 
   if (!kind) return { status: "unknown", timestamp };
   const normalized = previewSource?.replace(/\s+/g, " ").trim();
-  const contentDigest = normalized ? await sha256(normalized) : undefined;
+  const contentDigest = normalized
+    ? await sha256(normalized)
+    : usageCumulative
+    ? await sha256(JSON.stringify(usageCumulative))
+    : undefined;
   const contentPreview = normalized?.slice(0, maxPreviewChars);
   const eventId = await stableEventId(
     state,
