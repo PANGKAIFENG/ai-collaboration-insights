@@ -39,7 +39,7 @@ function isScaffolding(event: UnifiedEvent): boolean {
   if (event.kind !== "message") return false;
   if (event.role === "developer") return true;
   const text = event.contentPreview?.trim() ?? "";
-  return /^(?:#\s*AGENTS\.md instructions|<environment_context>|#\s*Developer instructions|<INSTRUCTIONS>)/i
+  return /^(?:#\s*AGENTS\.md instructions|<environment_context>|#\s*Developer instructions|<INSTRUCTIONS>|#\s*(?:Files|Applications) mentioned by the user\s*:|Automation\s*:)/i
     .test(text);
 }
 
