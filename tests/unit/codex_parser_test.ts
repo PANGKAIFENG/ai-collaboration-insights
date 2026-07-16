@@ -36,7 +36,7 @@ Deno.test("maps a Codex user message to a bounded unified event", async () => {
   assert(!result.event.sourceSessionId.includes("synthetic-session"));
 });
 
-Deno.test("maps last token usage without treating cumulative totals as another event", async () => {
+Deno.test("maps last token usage as a window-local call increment", async () => {
   const result = await parseCodexLine(
     JSON.stringify({
       timestamp: "2026-07-14T11:02:00.000Z",
@@ -65,7 +65,8 @@ Deno.test("maps last token usage without treating cumulative totals as another e
     reasoningTokens: 1,
     totalTokens: 16,
   });
-  assertEquals(result.event?.usageSemantics, "session_cumulative");
+  assertEquals(result.event?.usageSemantics, "call_increment");
+  assert(result.event?.contentDigest !== undefined);
 });
 
 Deno.test("maps supported search response items without unknown diagnostics", async () => {

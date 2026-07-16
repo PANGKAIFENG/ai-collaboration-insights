@@ -60,9 +60,19 @@ function maxUsage(events: UnifiedEvent[]): Usage {
 function sessionUsage(events: UnifiedEvent[]): Usage {
   const cumulative = events.filter((event) => event.usageSemantics === "session_cumulative");
   const unknown = events.filter((event) => event.usageSemantics === "unknown_snapshot");
-  const increments = events.filter((event) => event.usageSemantics === "call_increment");
-  const result = maxUsage(cumulative.length > 0 ? cumulative : unknown);
-  for (const event of increments) if (event.usage) addUsage(result, event.usage);
+  const increments = events.filter((event) => event.usageSemantics === "call_increment")
+    .toSorted((left, right) =>
+      left.timestamp.localeCompare(right.timestamp) || left.eventId.localeCompare(right.eventId)
+    );
+  if (increments.length === 0) return maxUsage(cumulative.length > 0 ? cumulative : unknown);
+
+  const result: Usage = {};
+  const seenCumulativeDigests = new Set<string>();
+  for (const event of increments) {
+    if (event.contentDigest && seenCumulativeDigests.has(event.contentDigest)) continue;
+    if (event.usage) addUsage(result, event.usage);
+    if (event.contentDigest) seenCumulativeDigests.add(event.contentDigest);
+  }
   return result;
 }
 
