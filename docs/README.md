@@ -33,6 +33,8 @@ The repository-level `/plans/` lane owns approved phase roadmaps and issue-level
 
 ## Current Baselines
 
+- Product direction: [产品目标校准 v0.1](PROJECT/product-goal-calibration-v0.1.md)
+- Discovery evidence: [产品假设验证基线 v0.1](TESTS/product-hypothesis-validation-baseline-v0.1.md)
 - Product: [AI 协作复盘台 PRD v0.3](PRD/ai-collaboration-review-prd-v0.3.md)
 - MVP scope: [Codex 日报 MVP 范围压缩决策 v0.1](PRD/codex-daily-report-mvp-scope-v0.1.md)
 - Runtime: [ADR-0001: Codex 日报 MVP 运行时与安全边界](DECISIONS/ADR-0001-codex-daily-report-runtime.md)
