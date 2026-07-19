@@ -1,6 +1,7 @@
 import { assert, assertEquals, assertRejects } from "../_assert.ts";
 import { generateDailyReport, generateScheduledReports } from "../../packages/report/pipeline.ts";
 import { grantConsent } from "../../packages/runtime/commands.ts";
+import { PARSER_VERSION } from "../../packages/core/types.ts";
 
 const sourceFixture = new URL("../fixtures/codex/window-basic.jsonl", import.meta.url).pathname;
 
@@ -23,6 +24,7 @@ Deno.test("publishes idempotent revisions and preserves current report on failur
     const first = await generateDailyReport(options);
     assertEquals(first.status, "generated");
     assertEquals(first.report.revision, 1);
+    assertEquals(first.report.provenance.parserVersion, PARSER_VERSION);
     assert(await exists(`${dataDir}/reports/2026-07-15/report.json`));
     assert(await exists(`${dataDir}/reports/2026-07-15/index.html`));
     assert(await exists(`${dataDir}/reports/index.html`));
@@ -54,6 +56,41 @@ Deno.test("publishes idempotent revisions and preserves current report on failur
       await Deno.readTextFile(`${dataDir}/reports/2026-07-15/report.json`),
       beforeFailure,
     );
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("rebuilds a same-fingerprint legacy report before strict validation", async () => {
+  const root = await Deno.makeTempDir();
+  const sourceRoot = `${root}/source`;
+  const dataDir = `${root}/data`;
+  await Deno.mkdir(sourceRoot);
+  await Deno.copyFile(sourceFixture, `${sourceRoot}/session.jsonl`);
+  const options = {
+    date: "2026-07-15",
+    timeZone: "Asia/Shanghai",
+    sourceRoot,
+    dataDir,
+    noAi: true,
+    generationReason: "manual" as const,
+    now: new Date("2026-07-15T11:01:00.000Z"),
+  };
+  try {
+    const first = await generateDailyReport(options);
+    const reportPath = `${dataDir}/reports/2026-07-15/report.json`;
+    const legacy = JSON.parse(await Deno.readTextFile(reportPath)) as Record<string, unknown>;
+    legacy.schemaVersion = "1";
+    (legacy.provenance as Record<string, unknown>).parserVersion = "1";
+    for (const task of legacy.tasks as Array<Record<string, unknown>>) delete task.sourceTurnIds;
+    await Deno.writeTextFile(reportPath, `${JSON.stringify(legacy)}\n`);
+
+    const rebuilt = await generateDailyReport(options);
+
+    assertEquals(rebuilt.status, "generated");
+    assertEquals(rebuilt.report.revision, first.report.revision + 1);
+    assertEquals(rebuilt.report.provenance.parserVersion, PARSER_VERSION);
+    assert(rebuilt.report.tasks.every((task) => task.sourceTurnIds.length > 0));
   } finally {
     await Deno.remove(root, { recursive: true });
   }
@@ -153,7 +190,7 @@ Deno.test("enriches a deterministic report only after consent", async () => {
               id: "task-1",
               name: "Deliver daily window coverage",
               outcome: "Window parser and tests were added",
-              verificationStatus: "attempted",
+              verificationStatus: "failed",
               confidence: 0.9,
               evidenceIds: ["task-1-intent"],
               needsDetail: false,
@@ -173,7 +210,88 @@ Deno.test("enriches a deterministic report only after consent", async () => {
     assertEquals(result.report.analysisStatus.status, "complete");
     assertEquals(result.report.analysisStatus.coverage?.analyzedTasks, 1);
     assertEquals(result.report.tasks[0].name, "Deliver daily window coverage");
+    assertEquals(result.report.tasks[0].verification, "failed");
     assertEquals(result.report.coachSuggestions.length, 1);
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("does not upgrade attempted verification to verified during AI enrichment", async () => {
+  const root = await Deno.makeTempDir();
+  const sourceRoot = `${root}/source`;
+  const dataDir = `${root}/data`;
+  await Deno.mkdir(sourceRoot);
+  await Deno.writeTextFile(
+    `${sourceRoot}/session.jsonl`,
+    [
+      JSON.stringify({
+        timestamp: "2026-07-14T11:00:00.000Z",
+        type: "session_meta",
+        payload: { id: "attempted-session", cwd: "/synthetic/project" },
+      }),
+      JSON.stringify({
+        timestamp: "2026-07-14T11:00:01.000Z",
+        type: "response_item",
+        payload: {
+          type: "message",
+          id: "intent",
+          role: "user",
+          content: [{ text: "实现并验证报告" }],
+        },
+      }),
+      JSON.stringify({
+        timestamp: "2026-07-14T11:00:02.000Z",
+        type: "response_item",
+        payload: {
+          type: "function_call",
+          call_id: "verification-call",
+          name: "exec_command",
+          arguments: '{"cmd":"deno task verify"}',
+        },
+      }),
+      JSON.stringify({
+        timestamp: "2026-07-14T11:00:03.000Z",
+        type: "response_item",
+        payload: {
+          type: "function_call_output",
+          call_id: "verification-call",
+          output: "verification command ran",
+        },
+      }),
+    ].join("\n") + "\n",
+  );
+  try {
+    await grantConsent(`${dataDir}/consent.json`, new Date("2026-07-15T11:00:00.000Z"));
+    const result = await generateDailyReport({
+      date: "2026-07-15",
+      timeZone: "Asia/Shanghai",
+      sourceRoot,
+      dataDir,
+      noAi: false,
+      generationReason: "manual",
+      analyzerRunner: () =>
+        Promise.resolve({
+          code: 0,
+          output: JSON.stringify({
+            tasks: [{
+              id: "task-1",
+              name: "Implement report verification",
+              outcome: "Verification was attempted",
+              verificationStatus: "attempted",
+              confidence: 0.9,
+              evidenceIds: ["task-1-intent"],
+              needsDetail: false,
+              conflict: false,
+            }],
+            insights: [],
+            suggestions: [],
+          }),
+        }),
+    });
+
+    assertEquals(result.report.tasks[0].hasVerification, true);
+    assertEquals(result.report.tasks[0].verification, "attempted");
   } finally {
     await Deno.remove(root, { recursive: true });
   }

@@ -1,6 +1,6 @@
 # Contributing
 
-AI Collaboration Insights `v0.2.2` 当前处于 Codex-only 日报公开 alpha 阶段。
+AI Collaboration Insights `v0.3.0` 当前处于 Codex-only 日报公开 alpha 阶段。
 
 ## Before Starting
 

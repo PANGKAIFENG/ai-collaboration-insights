@@ -2,7 +2,7 @@
 
 ## Current Snapshot
 
-`v0.2.2` is the current Codex-only daily-report public alpha. Production code,
+`v0.3.0` is the current Codex-only daily-report public alpha. Production code,
 progressive-analysis evaluation, release automation, install/uninstall scripts,
 and verification evidence are present. The repository validates the installed
 product with real Codex usage while keeping personal logs and reports outside Git.

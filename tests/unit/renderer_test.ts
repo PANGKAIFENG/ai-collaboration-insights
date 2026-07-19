@@ -70,6 +70,7 @@ function syntheticReport(): DailyReport {
       confidence: 0.75,
       evidenceIds: ["evidence-1"],
       sourceSessionIds: ["session-1"],
+      sourceTurnIds: ["turn-1"],
       relationIds: [],
       semanticRoundCount: 1,
       effectiveRoundCount: 0,
@@ -177,6 +178,86 @@ Deno.test("renders quality coverage task status evidence and at most five key ro
   assert(html.includes("证据详情"));
   assertEquals((html.match(/data-round=/g) ?? []).length, 5);
   assert(html.includes("one synthetic task timed out"));
+});
+
+Deno.test("renders structured evidence result status without raw tool output", () => {
+  const report = syntheticReport();
+  report.evidencePackets = [{
+    schemaVersion: "1",
+    taskId: "task-1",
+    anchors: [{
+      eventId: "verification-result",
+      sourceTurnId: "turn-1",
+      category: "verification",
+      timestamp: "2026-07-14T11:05:00.000Z",
+      kind: "tool_result",
+      resultStatus: "error",
+    }],
+    rounds: [],
+    coverage: {
+      requiredCategories: ["intent", "outcome", "verification", "asset", "delegation"],
+      presentCategories: ["verification"],
+      missingCategories: ["intent", "outcome", "asset", "delegation"],
+      categoryRatio: 0.2,
+      totalAnchors: 1,
+      includedAnchors: 1,
+      omittedAnchors: 0,
+      totalRounds: 0,
+      includedRounds: 0,
+      omittedRounds: 0,
+      omittedRoundEventRefs: 0,
+      truncated: false,
+    },
+  }];
+
+  const html = renderDailyReport(report);
+
+  assert(html.includes("验证结果：失败"));
+  assert(!html.includes("raw tool output"));
+});
+
+Deno.test("does not render an ordinary outcome status as a verification result", () => {
+  const report = syntheticReport();
+  report.evidencePackets = [{
+    schemaVersion: "1",
+    taskId: "task-1",
+    anchors: [{
+      eventId: "ordinary-outcome",
+      sourceTurnId: "turn-1",
+      category: "outcome",
+      timestamp: "2026-07-14T11:05:00.000Z",
+      kind: "message",
+      resultStatus: "success",
+    }],
+    rounds: [],
+    coverage: {
+      requiredCategories: ["intent", "outcome", "verification", "asset", "delegation"],
+      presentCategories: ["outcome"],
+      missingCategories: ["intent", "verification", "asset", "delegation"],
+      categoryRatio: 0.2,
+      totalAnchors: 1,
+      includedAnchors: 1,
+      omittedAnchors: 0,
+      totalRounds: 0,
+      includedRounds: 0,
+      omittedRounds: 0,
+      omittedRoundEventRefs: 0,
+      truncated: false,
+    },
+  }];
+
+  const html = renderDailyReport(report);
+
+  assert(!html.includes("验证结果：通过"));
+});
+
+Deno.test("renders an explicit failed task verification status", () => {
+  const report = syntheticReport();
+  report.tasks[0].verification = "failed" as never;
+
+  const html = renderDailyReport(report);
+
+  assert(html.includes("验证失败"));
 });
 
 Deno.test("does not interpolate an unsafe dimension score into inline styles", () => {

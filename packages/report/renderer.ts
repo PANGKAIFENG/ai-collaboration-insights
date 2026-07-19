@@ -79,8 +79,15 @@ function taskAnalysisLabel(
 
 function verificationLabel(value: DailyReport["tasks"][number]["verification"]): string {
   if (value === "verified") return "已验证";
+  if (value === "failed") return "验证失败";
   if (value === "attempted") return "已尝试验证";
   return "未观察到验证";
+}
+
+function resultStatusLabel(value: "success" | "error" | "unknown"): string {
+  if (value === "success") return "验证结果：通过";
+  if (value === "error") return "验证结果：失败";
+  return "验证结果：未知";
 }
 
 function roundLabel(round: DailyReport["tasks"][number]["keyRounds"][number]): string {
@@ -136,6 +143,13 @@ export function renderDailyReport(report: DailyReport): string {
           escapeHtml(item?.label ?? "证据摘要不可用")
         }</span><small>${item ? `${percent(item.confidence)} 置信` : "引用保留"}</small></li>`;
       }).join("");
+      const resultRows = report.evidencePackets.find((packet) => packet.taskId === task.id)?.anchors
+        .filter((anchor) => anchor.category === "verification" && anchor.resultStatus !== undefined)
+        .slice(0, 12).map((anchor) =>
+          `<li><code>${escapeHtml(anchor.eventId)}</code><span>${
+            escapeHtml(resultStatusLabel(anchor.resultStatus!))
+          }</span><small>${escapeHtml(anchor.category)}</small></li>`
+        ).join("") ?? "";
       const insightRows = report.sessionInsights.filter((insight) =>
         task.sourceSessionIds.includes(insight.sessionRef)
       ).slice(0, 2).map((insight) =>
@@ -172,7 +186,7 @@ export function renderDailyReport(report: DailyReport): string {
         rounds || "<li>暂无可展示轮次</li>"
       }</ol></details>
             <details><summary>证据详情 <span>${task.evidenceIds.length}</span></summary><ul class="evidence-list">${
-        evidenceRows || "<li>暂无可核对证据</li>"
+        `${evidenceRows}${resultRows}` || "<li>暂无可核对证据</li>"
       }</ul></details>
             ${
         insightRows

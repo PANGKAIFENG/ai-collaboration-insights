@@ -17,7 +17,7 @@ const REQUIRED: EvidenceCategory[] = [
   "delegation",
 ];
 const VERIFICATION =
-  /(^|[_-])(test|check|lint|build|verify)([_-]|$)|tests?\s+(?:passed|failed)|验证(?:通过|失败)|检查(?:通过|失败)/i;
+  /(^|[_-])(test|check|lint|build|verify)([_-]|$)|tests?\s+(?:passed|failed)|\b\d+\s+passed\b.{0,80}\b\d+\s+failed\b|验证(?:通过|失败)|检查(?:通过|失败)/i;
 const ASSET =
   /\b[A-Za-z0-9_.-]+\.(?:md|ts|tsx|js|json|py|html|css)\b|(?:created|added|updated|生成|新增|更新).*(?:文档|脚本|测试|skill|workflow|template)/i;
 const FEEDBACK = /不对|改为|调整|tests?\s+failed|验证失败|检查失败|报错|错误/i;
@@ -31,7 +31,11 @@ function bytes(value: unknown): number {
   return new TextEncoder().encode(JSON.stringify(value)).length;
 }
 
-function categories(event: UnifiedEvent, firstUserId: string | undefined): EvidenceCategory[] {
+function categories(
+  event: UnifiedEvent,
+  firstUserId: string | undefined,
+  readBackEventIds: Set<string>,
+): EvidenceCategory[] {
   const result: EvidenceCategory[] = [];
   const text = event.contentPreview ?? "";
   if (event.eventId === firstUserId) result.push("intent");
@@ -39,7 +43,11 @@ function categories(event: UnifiedEvent, firstUserId: string | undefined): Evide
   if (event.kind === "message" && event.role === "assistant") result.push("outcome");
   if (event.kind === "tool_call") result.push("attempt");
   if (event.kind === "subagent") result.push("delegation");
-  if (VERIFICATION.test(event.toolName ?? "") || VERIFICATION.test(text)) {
+  if (
+    readBackEventIds.has(event.eventId) || event.actionCategory === "verification" ||
+    VERIFICATION.test(event.toolName ?? "") ||
+    VERIFICATION.test(text)
+  ) {
     result.push("verification");
   }
   if (ASSET.test(text)) result.push("asset");
@@ -47,13 +55,32 @@ function categories(event: UnifiedEvent, firstUserId: string | undefined): Evide
   return result;
 }
 
+function explicitResultStatus(event: UnifiedEvent): EvidencePacketAnchor["resultStatus"] {
+  if (event.toolResultStatus) return event.toolResultStatus;
+  if (event.kind !== "message" || event.role !== "assistant") return undefined;
+  const text = event.contentPreview ?? "";
+  const withoutZeroFailures = text.replace(
+    /\b0\s+(?:errors?|fail(?:ed|ures?))\b/gi,
+    "",
+  );
+  if (/\b(?:errors?|failed|failures?)\b|(?:失败|错误)/i.test(withoutZeroFailures)) {
+    return "error";
+  }
+  if (/\b(?:pass(?:ed)?|success(?:ful)?|complete(?:d)?)\b|(?:通过|成功|完成|一致)/i.test(text)) {
+    return "success";
+  }
+  return undefined;
+}
+
 function anchor(event: UnifiedEvent, category: EvidenceCategory): EvidencePacketAnchor {
   const text = event.contentPreview ? redactText(event.contentPreview, 240) : undefined;
   return {
     eventId: event.eventId,
+    sourceTurnId: event.sourceTurnId,
     category,
     timestamp: event.timestamp,
     kind: event.kind,
+    resultStatus: category === "verification" ? explicitResultStatus(event) : undefined,
     text: text || undefined,
   };
 }
@@ -99,8 +126,27 @@ export function buildTaskEvidencePacket(
   );
   const firstUserId = events.find((event) => event.kind === "message" && event.role === "user")
     ?.eventId;
+  const firstMutationAt = events.find((event) => event.actionCategory === "artifact_change")
+    ?.timestamp;
+  const readBackCalls = events.filter((event) =>
+    event.kind === "tool_call" && event.actionCategory === "inspection" && firstMutationAt &&
+    event.timestamp > firstMutationAt
+  );
+  const readBackCallIds = new Set(
+    readBackCalls.flatMap((event) => event.toolCallId ? [event.toolCallId] : []),
+  );
+  const readBackEventIds = new Set([
+    ...readBackCalls.map((event) => event.eventId),
+    ...events.filter((event) =>
+      event.kind === "tool_result" &&
+      (Boolean(
+        event.parentEventId && readBackCalls.some((call) => call.eventId === event.parentEventId),
+      ) ||
+        Boolean(event.toolCallId && readBackCallIds.has(event.toolCallId)))
+    ).map((event) => event.eventId),
+  ]);
   const allAnchors = events.flatMap((event) =>
-    categories(event, firstUserId).map((category) => anchor(event, category))
+    categories(event, firstUserId, readBackEventIds).map((category) => anchor(event, category))
   );
   const core = coreAnchors(allAnchors);
   const coreKeys = new Set(core.map((item) => `${item.eventId}:${item.category}`));

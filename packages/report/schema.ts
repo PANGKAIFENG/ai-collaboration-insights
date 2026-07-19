@@ -39,12 +39,43 @@ export function validateDailyReport(value: unknown): DailyReport {
     const task = object(value);
     if (!task) throw new Error("invalid task");
     if (task.analysisStatus === undefined) task.analysisStatus = "deterministic";
+    if (
+      ![
+        "verified",
+        "failed",
+        "attempted",
+        "not_observed",
+      ].includes(String(task.verification))
+    ) {
+      throw new Error("invalid task.verification");
+    }
+    if (
+      !Array.isArray(task.sourceTurnIds) || task.sourceTurnIds.length === 0 ||
+      task.sourceTurnIds.some((id) => typeof id !== "string" || id.length === 0)
+    ) {
+      throw new Error("invalid task.sourceTurnIds");
+    }
   }
   for (const value of report.evidence) {
     const evidence = object(value);
     if (!evidence) throw new Error("invalid evidence");
     if (evidence.availability === undefined) evidence.availability = "complete";
     if (evidence.sourceCategories === undefined) evidence.sourceCategories = [];
+  }
+  if (!Array.isArray(report.evidencePackets)) throw new Error("evidencePackets must be an array");
+  for (const value of report.evidencePackets) {
+    const packet = object(value);
+    if (!packet || !Array.isArray(packet.anchors)) throw new Error("invalid evidence packet");
+    for (const value of packet.anchors) {
+      const anchor = object(value);
+      if (!anchor) throw new Error("invalid evidence anchor");
+      if (
+        anchor.resultStatus !== undefined &&
+        !["success", "error", "unknown"].includes(String(anchor.resultStatus))
+      ) {
+        throw new Error("invalid evidence anchor resultStatus");
+      }
+    }
   }
   const score = object(report.score);
   if (!score || !Array.isArray(score.dimensions)) throw new Error("invalid score");

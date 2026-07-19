@@ -22,6 +22,7 @@ function task(index: number, options: Partial<TaskSummary> = {}): TaskSummary {
     hasVerification: true,
     hasReusableAsset: false,
     ...options,
+    sourceTurnIds: options.sourceTurnIds ?? [`turn-${index}`],
   };
 }
 

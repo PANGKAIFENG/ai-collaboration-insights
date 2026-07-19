@@ -356,6 +356,35 @@ Deno.test("degrades on invalid core output and runner failure", async () => {
   assertEquals(failed.status, "degraded");
 });
 
+Deno.test("accepts an explicit failed verification enrichment", async () => {
+  const result = await runCodexAnalysis({
+    input: inputPackage,
+    detailProvider,
+    consent,
+    runner: () =>
+      Promise.resolve({
+        code: 0,
+        output: JSON.stringify({
+          tasks: [{
+            id: "task-1",
+            name: "Analyzed task one",
+            outcome: "Verification failed",
+            verificationStatus: "failed",
+            confidence: 0.9,
+            evidenceIds: ["event-1"],
+            needsDetail: false,
+            conflict: false,
+          }],
+          insights: [],
+          suggestions: [],
+        }),
+      }),
+  });
+
+  assertEquals(result.status, "partial");
+  assertEquals(result.enrichment?.tasks[0].verificationStatus, "failed");
+});
+
 Deno.test("rejects a session insight anchored only in another session", async () => {
   const result = await runCodexAnalysis({
     input: inputPackage,
