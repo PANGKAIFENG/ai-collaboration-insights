@@ -10,6 +10,7 @@ Executable tests belong in `/tests` or alongside code when the approved toolchai
 - [任务识别与评分 Eval MVP 基线报告](scoring-task-eval-baseline-report.md)
 - [渐进分析发布 Eval 方法](progressive-analysis-eval-methodology.md)
 - [渐进分析公开合成 Eval 报告](progressive-analysis-synthetic-report.md)
+- [真实 Task Ground Truth 评测](real-task-ground-truth-eval-v0.1.md)
 - [OpenCode 合成 Fixture 契约](opencode-synthetic-fixture-contract.md)
 - [WorkBuddy 合成 Fixture 契约](workbuddy-synthetic-fixture-contract.md)
 - [Qoder 合成 Fixture 契约](qoder-synthetic-fixture-contract.md)
