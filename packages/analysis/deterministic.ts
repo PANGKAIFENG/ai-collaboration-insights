@@ -20,6 +20,27 @@ import { segmentSemanticRounds, selectKeyRounds } from "./rounds.ts";
 const ACTIVE_SEGMENT_MS = 5 * 60 * 1000;
 const MERGE_GAP_MS = 20 * 60 * 1000;
 
+function verificationResultStatus(text: string | undefined): "success" | "error" | "unknown" {
+  if (!text) return "unknown";
+  const withoutZeroFailures = text.replace(
+    /\b0\s+(?:errors?|fail(?:ed|ures?))\b/gi,
+    "",
+  );
+  if (/\b(?:errors?|failed|failures?)\b|(?:失败|错误)/i.test(withoutZeroFailures)) {
+    return "error";
+  }
+  if (/\b(?:pass(?:ed)?|success(?:ful)?|complete(?:d)?)\b|(?:通过|成功|完成|一致)/i.test(text)) {
+    return "success";
+  }
+  return "unknown";
+}
+
+function isExplicitVerificationIntent(text: string | undefined): boolean {
+  if (!text) return false;
+  return /(?:核对|检查|验证|试验|测试)(?:一下|下|是否|这个|该|当前|已|页面|文件|数据|状态|结果|效果|内容|功能|发布|部署)|(?:是否|页面|文件|数据|状态|结果|效果|内容|功能|发布|部署).{0,40}(?:正确|一致|生效|成功|可用)|\b(?:verify|check|test|inspect)\b.{0,80}\b(?:state|status|result|page|file|data|output|content|release|deployment|works?|matches?|applied|correct)\b/i
+    .test(text);
+}
+
 interface MutableBlock {
   projectRef?: string;
   projectLabel?: string;
@@ -166,25 +187,66 @@ function blockProjection(
       ["user_message", "tool_action"],
     ));
   }
+  const mutationActions = tools.filter((event) =>
+    event.actionCategory === "artifact_change" ||
+    /apply_patch|write(?:_file)?|create(?:_file)?|edit(?:_file)?/i.test(event.toolName ?? "")
+  );
+  const firstMutationAt = mutationActions[0]?.timestamp;
+  const explicitVerificationAt = users.find((event) =>
+    isExplicitVerificationIntent(event.contentPreview)
+  )?.timestamp;
   const verificationActions = tools.filter((event) =>
     event.actionCategory === "verification" ||
-    /(^|[_-])(test|check|lint|build|verify)([_-]|$)/i.test(event.toolName ?? "")
+    /(^|[_-])(test|check|lint|build|verify)([_-]|$)/i.test(event.toolName ?? "") ||
+    (event.actionCategory === "inspection" &&
+      ((firstMutationAt && event.timestamp > firstMutationAt) ||
+        (explicitVerificationAt && event.timestamp > explicitVerificationAt)))
   );
   const firstVerificationAt = verificationActions[0]?.timestamp;
-  const verificationResults = assistants.filter((event) =>
+  const verificationSummaries = assistants.filter((event) =>
     firstVerificationAt && event.timestamp >= firstVerificationAt &&
-    /tests?\s+(?:passed|pass)|\b(?:check|lint|build|verify|verified)\b.*\bpass(?:ed)?\b|验证通过|检查通过|构建通过/i
+    /\b\d+\s+pass(?:ed)?\b.{0,40}\b\d+\s+fail(?:ed|ures?)\b|\b(?:tests?|check|lint|build|verify|verification|release|read[- ]?back)\b.{0,120}\b(?:pass(?:ed)?|fail(?:ed)?|success(?:ful)?|complete(?:d)?|error)\b|\b(?:pass(?:ed)?|fail(?:ed)?|success(?:ful)?|complete(?:d)?|error)\b.{0,120}\b(?:tests?|check|lint|build|verify|verification|release|read[- ]?back)\b|(?:验证|检查|测试|构建|发布|读回).{0,40}(?:通过|失败|成功|完成|一致|错误)/i
       .test(event.contentPreview ?? "")
   );
-  const hasVerification = verificationActions.length > 0 && verificationResults.length > 0;
+  const verificationActionIds = new Set(verificationActions.map((event) => event.eventId));
+  const verificationCallIds = new Set(
+    verificationActions.flatMap((event) => event.toolCallId ? [event.toolCallId] : []),
+  );
+  const verificationToolResults = block.events.filter((event) =>
+    event.kind === "tool_result" &&
+    (event.actionCategory === "verification" ||
+      Boolean(event.parentEventId && verificationActionIds.has(event.parentEventId)) ||
+      Boolean(event.toolCallId && verificationCallIds.has(event.toolCallId)))
+  );
+  const hasVerification = verificationActions.length > 0 &&
+    (verificationToolResults.length > 0 || verificationSummaries.length > 0);
+  const latestVerificationStatus = [
+    ...verificationToolResults.map((event) => ({
+      event,
+      status: event.toolResultStatus ?? "unknown",
+    })),
+    ...verificationSummaries.map((event) => ({
+      event,
+      status: verificationResultStatus(event.contentPreview),
+    })),
+  ].filter((observation) => observation.status !== "unknown")
+    .toSorted((left, right) =>
+      left.event.timestamp.localeCompare(right.event.timestamp) ||
+      left.event.eventId.localeCompare(right.event.eventId)
+    ).at(-1)?.status;
+  const failedVerification = latestVerificationStatus === "error";
+  const successfulVerification = latestVerificationStatus === "success";
   if (hasVerification) {
+    const sourceCategories: EvidenceSourceCategory[] = ["tool_action"];
+    if (verificationToolResults.length > 0) sourceCategories.push("tool_result");
+    if (verificationSummaries.length > 0) sourceCategories.push("assistant_result");
     taskEvidence.push(evidence(
       `task-${index}-verification`,
       "verification",
-      "观察到验证动作和明确通过结果",
-      [...verificationActions, ...verificationResults],
+      successfulVerification ? "观察到验证动作和明确通过结果" : "观察到验证动作和明确结果",
+      [...verificationActions, ...verificationToolResults, ...verificationSummaries],
       0.86,
-      ["tool_action", "assistant_result"],
+      sourceCategories,
     ));
   }
   if (subagents.length > 0) {
@@ -197,10 +259,7 @@ function blockProjection(
       ["subagent_lifecycle"],
     ));
   }
-  const artifactActions = tools.filter((event) =>
-    event.actionCategory === "artifact_change" ||
-    /apply_patch|write(?:_file)?|create(?:_file)?|edit(?:_file)?/i.test(event.toolName ?? "")
-  );
+  const artifactActions = mutationActions;
   const firstArtifactAt = artifactActions[0]?.timestamp;
   const assetResults = assistants.filter((event) =>
     firstArtifactAt && event.timestamp >= firstArtifactAt &&
@@ -248,10 +307,19 @@ function blockProjection(
       end: workBlock.end,
       activeMinutes: workBlock.activeMinutes,
       outcome: outcome.slice(0, 240),
-      verification: hasVerification ? "verified" : "not_observed",
+      verification: failedVerification
+        ? "failed"
+        : successfulVerification
+        ? "verified"
+        : verificationActions.length > 0
+        ? "attempted"
+        : "not_observed",
       confidence: users.length > 0 ? 0.75 : 0.45,
       evidenceIds: taskEvidence.map((item) => item.id),
       sourceSessionIds: [...new Set(block.events.map((event) => event.sourceSessionId))].sort(),
+      sourceTurnIds: [
+        ...new Set(block.events.flatMap((event) => event.sourceTurnId ? [event.sourceTurnId] : [])),
+      ].sort(),
       relationIds: [],
       semanticRoundCount: 0,
       effectiveRoundCount: 0,
@@ -314,6 +382,7 @@ export function analyzeDeterministically(
       activeMinutes: boundary.activeMinutes,
       confidence: boundary.confidence,
       sourceSessionIds: boundary.sourceSessionIds,
+      sourceTurnIds: boundary.sourceTurnIds,
       relationIds: boundary.relationIds,
       semanticRoundCount: rounds.length,
       effectiveRoundCount: effectiveRounds.length,

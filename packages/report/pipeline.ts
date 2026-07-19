@@ -16,6 +16,7 @@ import {
   type CoachSuggestion,
   type DailyReport,
   type Manifest,
+  PARSER_VERSION,
   REPORT_SCHEMA_VERSION,
 } from "../core/types.ts";
 import { indexEntries, renderDailyReport, renderReportIndex } from "./renderer.ts";
@@ -159,19 +160,25 @@ export async function generateDailyReport(
     const reportFile = `${reportsDir}/${options.date}/report.json`;
     const consent = await readConsent(`${options.dataDir}/consent.json`);
     if (current?.sourceFingerprint === scan.fingerprint && await pathExists(reportFile)) {
-      const existing = validateDailyReport(JSON.parse(await Deno.readTextFile(reportFile)));
-      const analysisIsCurrent = options.noAi
-        ? existing.analysisStatus.status === "disabled"
-        : consent.granted
-        ? existing.analysisStatus.mode === "ai_enriched" &&
-          existing.analysisStatus.status === "complete"
-        : existing.analysisStatus.status === "not_consented";
-      if (analysisIsCurrent) {
-        return {
-          status: "up_to_date",
-          report: existing,
-          htmlPath: `${reportsDir}/${options.date}/index.html`,
-        };
+      const rawExisting = JSON.parse(await Deno.readTextFile(reportFile));
+      if (
+        rawExisting?.schemaVersion === REPORT_SCHEMA_VERSION &&
+        rawExisting?.provenance?.parserVersion === PARSER_VERSION
+      ) {
+        const existing = validateDailyReport(rawExisting);
+        const analysisIsCurrent = options.noAi
+          ? existing.analysisStatus.status === "disabled"
+          : consent.granted
+          ? existing.analysisStatus.mode === "ai_enriched" &&
+            existing.analysisStatus.status === "complete"
+          : existing.analysisStatus.status === "not_consented";
+        if (analysisIsCurrent) {
+          return {
+            status: "up_to_date",
+            report: existing,
+            htmlPath: `${reportsDir}/${options.date}/index.html`,
+          };
+        }
       }
     }
 
@@ -211,7 +218,7 @@ export async function generateDailyReport(
       },
       provenance: {
         appVersion: APP_VERSION,
-        parserVersion: "1",
+        parserVersion: PARSER_VERSION,
         analyzerVersion: "2",
         rubricVersion: "1",
         rendererVersion: "1",
@@ -243,11 +250,16 @@ export async function generateDailyReport(
             ...task,
             name: enrichment.name,
             outcome: enrichment.outcome,
-            verification: task.hasVerification
+            verification: task.verification === "failed" ||
+                enrichment.verificationStatus === "failed"
+              ? "failed"
+              : task.verification === "verified" ||
+                  enrichment.verificationStatus === "verified"
               ? "verified"
-              : enrichment.verificationStatus === "not_observed"
-              ? "not_observed"
-              : "attempted",
+              : task.verification === "attempted" ||
+                  enrichment.verificationStatus === "attempted"
+              ? "attempted"
+              : "not_observed",
             confidence: Math.max(task.confidence, enrichment.confidence),
             analysisStatus: "analyzed",
           };

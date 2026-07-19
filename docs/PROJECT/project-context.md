@@ -6,11 +6,11 @@ Build an open-source, local-first product that helps individuals understand and 
 
 ## Current Phase
 
-`v0.2.2` is the current public alpha. It retains the `v0.2.0` progressive
-analysis model and `v0.2.1` trust fixes while restoring AI enrichment for users
-with a custom Codex provider and batching large task sets. The Codex-only daily
-report boundary is unchanged. The current phase remains real-use validation of
-report reliability, task recognition, comprehension, and coaching value.
+`v0.3.0` is the current public alpha. It retains the progressive analysis and AI
+enrichment behavior while introducing Unified Event v2, Source Turn, native tool
+pairing, and Turn-first Task reconstruction. The Codex-only daily-report boundary
+is unchanged. The current phase remains real-use validation of report reliability,
+task recognition, comprehension, and coaching value.
 
 ## Target User
 

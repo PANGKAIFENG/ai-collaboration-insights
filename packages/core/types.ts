@@ -1,15 +1,43 @@
-export const APP_VERSION = "0.2.2";
-export const EVENT_SCHEMA_VERSION = "1";
+export const APP_VERSION = "0.3.0";
+export const EVENT_SCHEMA_VERSION = "2";
+export const PARSER_VERSION = "2";
 export const REPORT_SCHEMA_VERSION = "1";
 
 export type EventKind =
   | "session"
+  | "turn_context"
   | "message"
   | "tool_call"
   | "tool_result"
   | "usage"
   | "subagent"
   | "unknown";
+
+export type SourceTurnBoundary = "native" | "inferred" | "partial";
+
+export interface SourceRef {
+  path: string;
+  line: number;
+}
+
+export interface ToolPair {
+  toolCallId: string;
+  callEventId?: string;
+  resultEventId?: string;
+  status: "matched" | "unmatched_call" | "unmatched_result";
+}
+
+export interface SourceTurn {
+  id: string;
+  sourceSessionId: string;
+  boundary: SourceTurnBoundary;
+  completeness: "complete" | "partial" | "inferred";
+  start: string;
+  end: string;
+  eventIds: string[];
+  userEventIds: string[];
+  toolPairs: ToolPair[];
+}
 
 export interface Usage {
   inputTokens?: number;
@@ -21,9 +49,14 @@ export interface Usage {
 
 export interface UnifiedEvent {
   schemaVersion: typeof EVENT_SCHEMA_VERSION;
+  parserVersion?: typeof PARSER_VERSION;
   eventId: string;
   sourceTool: "codex";
   sourceSessionId: string;
+  parentSourceSessionId?: string;
+  sourceSessionRole?: "root" | "subagent" | "unknown";
+  sourceTurnId?: string;
+  turnBoundary?: SourceTurnBoundary;
   timestamp: string;
   kind: EventKind;
   role?: "user" | "assistant" | "developer";
@@ -31,7 +64,11 @@ export interface UnifiedEvent {
   usage?: Usage;
   usageSemantics?: "session_cumulative" | "call_increment" | "unknown_snapshot";
   toolName?: string;
-  actionCategory?: "verification" | "artifact_change";
+  toolCallId?: string;
+  toolResultStatus?: "success" | "error" | "unknown";
+  parentEventId?: string;
+  childEventIds?: string[];
+  actionCategory?: "verification" | "artifact_change" | "inspection";
   subagentDepth?: number;
   subagentRunId?: string;
   subagentStatus?: "started" | "interacted" | "interrupted" | "completed" | "unknown";
@@ -39,6 +76,7 @@ export interface UnifiedEvent {
   projectLabel?: string;
   contentDigest?: string;
   contentPreview?: string;
+  sourceRef?: SourceRef;
   availability: "available" | "partial" | "unavailable";
 }
 
@@ -129,9 +167,11 @@ export type EvidenceCategory =
 
 export interface EvidencePacketAnchor {
   eventId: string;
+  sourceTurnId?: string;
   category: EvidenceCategory;
   timestamp: string;
   kind: EventKind;
+  resultStatus?: "success" | "error" | "unknown";
   text?: string;
 }
 
@@ -165,10 +205,11 @@ export interface TaskSummary {
   end: string;
   activeMinutes: number;
   outcome: string;
-  verification: "verified" | "attempted" | "not_observed";
+  verification: "verified" | "failed" | "attempted" | "not_observed";
   confidence: number;
   evidenceIds: string[];
   sourceSessionIds: string[];
+  sourceTurnIds: string[];
   relationIds: string[];
   semanticRoundCount: number;
   effectiveRoundCount: number;

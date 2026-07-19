@@ -36,6 +36,18 @@ Deno.test("removes common secrets private paths and fenced code", () => {
   assert(redacted.includes("[CODE_BLOCK_REMOVED]"));
 });
 
+Deno.test("redacts arbitrary Unix absolute paths without damaging URLs", () => {
+  const redacted = redactText(
+    "see /tmp/client-a/report.json, /private/tmp/aci/private.json and /opt/company/customer.md at https://example.com/public/report",
+    500,
+  );
+
+  assert(!redacted.includes("/tmp/client-a"));
+  assert(!redacted.includes("/private/tmp/aci"));
+  assert(!redacted.includes("/opt/company"));
+  assert(redacted.includes("https://example.com/public/report"));
+});
+
 function task(index: number): TaskSummary {
   return {
     id: `task-${index}`,
@@ -48,6 +60,7 @@ function task(index: number): TaskSummary {
     confidence: index === 30 ? 0.5 : 0.85,
     evidenceIds: [`task-${index}-intent`],
     sourceSessionIds: [`session-${index}`],
+    sourceTurnIds: [`turn-${index}`],
     relationIds: [],
     semanticRoundCount: 1,
     effectiveRoundCount: 0,
@@ -121,6 +134,23 @@ Deno.test("analysis package covers every task core before optional detail", () =
   assertEquals(value.coverage.includedTaskCores, 30);
   assertEquals(value.coverage.totalTasks, 30);
   assert(!("messages" in value));
+});
+
+Deno.test("preserves structured result status while redacting anchor text", () => {
+  const daily = report(1);
+  daily.evidencePackets[0].anchors[0] = {
+    ...daily.evidencePackets[0].anchors[0],
+    category: "verification",
+    resultStatus: "error",
+    text: "Failed at /Users/synthetic/private/output.log with sk-synthetic1234567890",
+  };
+
+  const value = buildAnalysisPackage(daily, 16_000);
+  const serialized = JSON.stringify(value);
+
+  assertEquals(value.tasks[0].anchors[0].resultStatus, "error");
+  assert(!serialized.includes("/Users/synthetic"));
+  assert(!serialized.includes("sk-synthetic"));
 });
 
 Deno.test("budget trimming preserves one anchor for every present core category", () => {

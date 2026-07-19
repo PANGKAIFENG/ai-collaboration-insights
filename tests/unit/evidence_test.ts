@@ -29,6 +29,9 @@ function task(events: UnifiedEvent[]): TaskBoundary {
     id: "task-1",
     name: "Synthetic task",
     sourceSessionIds: ["session-a"],
+    sourceTurnIds: [
+      ...new Set(events.flatMap((item) => item.sourceTurnId ? [item.sourceTurnId] : [])),
+    ],
     eventIds: events.map((item) => item.eventId),
     events,
     start: events[0].timestamp,
@@ -65,6 +68,104 @@ Deno.test("builds an independent redacted evidence packet with category diagnost
   assert(packet.coverage.presentCategories.includes("asset"));
   assert(packet.coverage.presentCategories.includes("delegation"));
   assertEquals(packet.coverage.missingCategories, []);
+});
+
+Deno.test("preserves successful verification evidence that reports zero errors", () => {
+  const events = [
+    event("intent", "2026-07-14T11:00:00.000Z", "message", {
+      role: "user",
+      contentPreview: "验证实现",
+    }),
+    {
+      ...event("verification", "2026-07-14T11:01:00.000Z", "message", {
+        role: "assistant",
+        contentPreview: "checks completed with 0 error",
+      }),
+      actionCategory: "verification" as const,
+    },
+  ];
+  const packet = buildTaskEvidencePacket(task(events), segmentSemanticRounds("task-1", events));
+  const verification = packet.anchors.find((anchor) => anchor.category === "verification");
+
+  assertEquals(verification?.resultStatus, "success");
+});
+
+Deno.test("keeps event and source turn references without exposing local sourceRef", () => {
+  const events = [
+    event("intent", "2026-07-14T11:00:00.000Z", "message", {
+      role: "user",
+      sourceTurnId: "turn-a",
+      sourceRef: { path: "/synthetic/private/session.jsonl", line: 4 },
+      contentPreview: "Implement traceability",
+    }),
+  ];
+  const packet = buildTaskEvidencePacket(task(events), []);
+  assertEquals(packet.anchors[0].sourceTurnId, "turn-a");
+  assertEquals(JSON.stringify(packet).includes("/synthetic/private"), false);
+});
+
+Deno.test("treats a successful verification tool result as verification evidence", () => {
+  const events = [
+    event("intent", "2026-07-14T11:00:00.000Z", "message", {
+      role: "user",
+      contentPreview: "Run release checks",
+    }),
+    event("result", "2026-07-14T11:01:00.000Z", "tool_result", {
+      actionCategory: "verification",
+      toolResultStatus: "success",
+      contentDigest: "synthetic-digest",
+    }),
+  ];
+  const packet = buildTaskEvidencePacket(task(events), []);
+  assert(
+    packet.anchors.some((anchor) =>
+      anchor.eventId === "result" && anchor.category === "verification"
+    ),
+  );
+  assertEquals(
+    packet.anchors.find((anchor) => anchor.eventId === "result")?.resultStatus,
+    "success",
+  );
+});
+
+Deno.test("retains assistant failure status in a public evidence anchor", () => {
+  const events = [
+    event("intent", "2026-07-14T11:00:00.000Z", "message", {
+      role: "user",
+      contentPreview: "Run release checks",
+    }),
+    event("summary", "2026-07-14T11:01:00.000Z", "message", {
+      role: "assistant",
+      contentPreview: "8 passed, 1 failed",
+    }),
+  ];
+  const packet = buildTaskEvidencePacket(task(events), []);
+  assertEquals(
+    packet.anchors.find((anchor) =>
+      anchor.eventId === "summary" && anchor.category === "verification"
+    )?.resultStatus,
+    "error",
+  );
+});
+
+Deno.test("does not attach result status to an ordinary successful assistant outcome", () => {
+  const events = [
+    event("intent", "2026-07-14T11:00:00.000Z", "message", {
+      role: "user",
+      contentPreview: "Summarize the completed work",
+    }),
+    event("outcome", "2026-07-14T11:01:00.000Z", "message", {
+      role: "assistant",
+      contentPreview: "The requested update completed successfully",
+    }),
+  ];
+
+  const packet = buildTaskEvidencePacket(task(events), []);
+  const outcome = packet.anchors.find((anchor) =>
+    anchor.eventId === "outcome" && anchor.category === "outcome"
+  );
+
+  assertEquals(outcome?.resultStatus, undefined);
 });
 
 Deno.test("keeps core anchors and reports omissions when the task budget is tight", () => {

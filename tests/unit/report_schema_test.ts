@@ -71,7 +71,102 @@ Deno.test("rejects more than three coach suggestions", async () => {
   await assertRejects(() => Promise.resolve(validateDailyReport(value)), /at most 3/);
 });
 
-Deno.test("migrates a v1 report without session insights", () => {
+Deno.test("rejects tasks without at least one source turn", async () => {
+  for (const sourceTurnIds of [undefined, []]) {
+    const value = report() as unknown as Record<string, unknown>;
+    value.tasks = [{
+      id: "task-without-turn",
+      name: "Task without source turn",
+      start: "2026-07-14T11:00:00.000Z",
+      end: "2026-07-14T11:10:00.000Z",
+      activeMinutes: 10,
+      outcome: "Synthetic outcome",
+      verification: "not_observed",
+      confidence: 0.7,
+      evidenceIds: ["legacy-evidence"],
+      sourceSessionIds: ["legacy-session"],
+      ...(sourceTurnIds === undefined ? {} : { sourceTurnIds }),
+      relationIds: [],
+      semanticRoundCount: 0,
+      effectiveRoundCount: 0,
+      keyRounds: [],
+      hasIteration: false,
+      hasVerification: false,
+      hasReusableAsset: false,
+    }];
+    await assertRejects(
+      () => Promise.resolve(validateDailyReport(value)),
+      /sourceTurnIds/,
+    );
+  }
+});
+
+Deno.test("rejects an unsupported evidence anchor result status", async () => {
+  const value = report() as unknown as Record<string, unknown>;
+  value.evidencePackets = [{ anchors: [{ resultStatus: "mixed" }] }];
+
+  await assertRejects(
+    () => Promise.resolve(validateDailyReport(value)),
+    /resultStatus/,
+  );
+});
+
+Deno.test("accepts an explicit failed task verification status", () => {
+  const value = report() as unknown as Record<string, unknown>;
+  value.tasks = [{
+    id: "failed-task",
+    name: "Failed verification task",
+    start: "2026-07-14T11:00:00.000Z",
+    end: "2026-07-14T11:10:00.000Z",
+    activeMinutes: 10,
+    outcome: "Synthetic failure",
+    verification: "failed",
+    confidence: 0.7,
+    evidenceIds: ["failure-evidence"],
+    sourceSessionIds: ["session-a"],
+    sourceTurnIds: ["turn-a"],
+    relationIds: [],
+    semanticRoundCount: 1,
+    effectiveRoundCount: 0,
+    keyRounds: [],
+    hasIteration: false,
+    hasVerification: true,
+    hasReusableAsset: false,
+  }];
+
+  assertEquals(validateDailyReport(value).tasks[0].verification, "failed");
+});
+
+Deno.test("rejects an unsupported task verification status", async () => {
+  const value = report() as unknown as Record<string, unknown>;
+  value.tasks = [{
+    id: "invalid-verification-task",
+    name: "Invalid verification task",
+    start: "2026-07-14T11:00:00.000Z",
+    end: "2026-07-14T11:10:00.000Z",
+    activeMinutes: 10,
+    outcome: "Synthetic outcome",
+    verification: "mixed",
+    confidence: 0.7,
+    evidenceIds: ["verification-evidence"],
+    sourceSessionIds: ["session-a"],
+    sourceTurnIds: ["turn-a"],
+    relationIds: [],
+    semanticRoundCount: 1,
+    effectiveRoundCount: 0,
+    keyRounds: [],
+    hasIteration: false,
+    hasVerification: true,
+    hasReusableAsset: false,
+  }];
+
+  await assertRejects(
+    () => Promise.resolve(validateDailyReport(value)),
+    /task\.verification/,
+  );
+});
+
+Deno.test("rejects a legacy report whose task has no source turn provenance", async () => {
   const value = report() as unknown as Record<string, unknown>;
   delete value.sessionInsights;
   value.tasks = [{
@@ -110,18 +205,8 @@ Deno.test("migrates a v1 report without session insights", () => {
       evidenceIds: ["legacy-evidence"],
     }],
   };
-  const migrated = validateDailyReport(value);
-  assertEquals(migrated.sessionInsights, []);
-  assertEquals(
-    (migrated.tasks[0] as unknown as { analysisStatus: string }).analysisStatus,
-    "deterministic",
-  );
-  assertEquals(
-    (migrated.evidence[0] as unknown as { availability: string }).availability,
-    "complete",
-  );
-  assertEquals(
-    (migrated.score.dimensions[0] as unknown as { status: string }).status,
-    "available",
+  await assertRejects(
+    () => Promise.resolve(validateDailyReport(value)),
+    /sourceTurnIds/,
   );
 });

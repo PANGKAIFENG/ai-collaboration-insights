@@ -24,7 +24,7 @@ export interface AnalysisTaskEnrichment {
   id: string;
   name: string;
   outcome: string;
-  verificationStatus: "verified" | "attempted" | "not_observed";
+  verificationStatus: "verified" | "failed" | "attempted" | "not_observed";
   confidence: number;
   evidenceIds: string[];
   needsDetail: boolean;
@@ -113,7 +113,9 @@ function validateEnrichment(value: unknown, input: AnalysisPackage): AnalysisEnr
     const evidenceIds = stringArray(item.evidenceIds, 20, 100);
     if (
       !id || !taskById.has(id) || seenTasks.has(id) || !name || !outcome ||
-      !["verified", "attempted", "not_observed"].includes(String(verificationStatus)) ||
+      !["verified", "failed", "attempted", "not_observed"].includes(
+        String(verificationStatus),
+      ) ||
       typeof confidence !== "number" || confidence < 0 || confidence > 1 ||
       !evidenceIds || evidenceIds.some((evidenceId) =>
         !taskById.get(id)?.evidenceIds.includes(evidenceId)

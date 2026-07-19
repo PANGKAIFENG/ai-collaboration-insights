@@ -69,14 +69,13 @@ const SECRET_PATTERNS = [
   /\bBearer\s+[A-Za-z0-9._~+\/-]{8,}\b/gi,
   /\bAKIA[0-9A-Z]{16}\b/g,
 ];
-const PRIVATE_PATH_PATTERN =
-  /(?:\/(?:Users|home)\/[^/\s"'<>]+|\/root|\/(?:private\/)?var)(?:\/[^\s"'<>]*)?/g;
+const PRIVATE_PATH_PATTERN = /(^|[\s("'`=:])\/(?!\/)[^/\s"'<>:,;]+(?:\/[^\s"'<>),;]*)*/gm;
 
 export function redactText(value: string, maxChars = 500): string {
   let result = value.replace(/```[\s\S]*?```/g, "[CODE_BLOCK_REMOVED]");
   for (const pattern of SECRET_PATTERNS) result = result.replace(pattern, "[REDACTED_SECRET]");
   result = result
-    .replace(PRIVATE_PATH_PATTERN, "[PRIVATE_PATH]")
+    .replace(PRIVATE_PATH_PATTERN, "$1[PRIVATE_PATH]")
     .replace(/[ \t]+/g, " ")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
